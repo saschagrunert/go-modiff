@@ -23,7 +23,7 @@ INFO 385 modules found
 INFO 1 modules added
 INFO 11 modules changed
 INFO 0 modules removed
-INFO The result:
+INFO Done, the result will be printed to `stdout`
 
 # Dependencies
 

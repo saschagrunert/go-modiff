@@ -55,7 +55,7 @@ func main() {
 		cli.StringFlag{
 			Name:  toArg + ", t",
 			Value: "master",
-			Usage: "the end of the comparison (any valid git ref)",
+			Usage: "the end of the comparison (any valid git rev)",
 		},
 	}
 	app.Action = run
@@ -204,9 +204,9 @@ func getModules(workDir, from, to string) modules {
 	return res
 }
 
-func retrieveModules(ref, workDir string) string {
-	logrus.Infof("Retrieving modules of %s", ref)
-	_, err := execCmd("git checkout -f "+ref, workDir)
+func retrieveModules(rev, workDir string) string {
+	logrus.Infof("Retrieving modules of %s", rev)
+	_, err := execCmd("git checkout -f "+rev, workDir)
 	if err != nil {
 		logrus.Fatal(err)
 	}

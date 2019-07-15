@@ -24,7 +24,8 @@ INFO 1 modules added
 INFO 11 modules changed
 INFO 0 modules removed
 INFO Done, the result will be printed to `stdout`
-
+```
+```markdown
 # Dependencies
 
 ## Added

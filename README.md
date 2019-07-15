@@ -1,4 +1,4 @@
-# go-modiff
+# go-modiff 📔
 
 [![CircleCI](https://circleci.com/gh/saschagrunert/go-modiff.svg?style=shield)](https://circleci.com/gh/saschagrunert/go-modiff)
 

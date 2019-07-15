@@ -37,7 +37,7 @@ func main() {
 
 	app := cli.NewApp()
 	app.Name = "go-modiff"
-	app.Version = "0.1.0"
+	app.Version = "0.2.0-dev"
 	app.Author = "Sascha Grunert"
 	app.Email = "mail@saschagrunert.de"
 	app.Usage = "Command line tool for diffing go module " +

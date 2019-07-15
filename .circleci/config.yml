@@ -1,0 +1,77 @@
+---
+version: 2.1
+
+stdenv: &stdenv
+  environment:
+    GOCACHE: &gocache /tmp/go-build
+    WORKDIR: &workdir /go/src/github.com/cri-o/cri-o
+
+executors:
+  container:
+    docker:
+      - image: circleci/golang:1.12
+        user: circleci
+    <<: *stdenv
+    working_directory: *workdir
+
+workflows:
+  version: 2
+  pipeline:
+    jobs:
+      - build
+      - lint
+      - vendor
+
+jobs:
+  build:
+    executor: container
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-build-{{ checksum "go.sum" }}
+      - run: go version
+      - run:
+          name: build
+          command: make
+      - save_cache:
+          key: v1-build-{{ checksum "go.sum" }}
+          paths:
+            - build/bin/go-modiff
+            - *gocache
+      - store_artifacts:
+          path: build/bin
+          destination: bin
+
+  lint:
+    executor: container
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-golangci-lint-{{ checksum "go.sum" }}
+      - run:
+          name: lint
+          command: make lint
+      - save_cache:
+          key: v1-golangci-lint-{{ checksum "go.sum" }}
+          paths:
+            - *gocache
+            - build/bin/golangci-lint
+
+  vendor:
+    executor: container
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-vendor-{{ checksum "go.sum" }}
+      - run:
+          name: check vendoring
+          command: |
+            make vendor
+            hack/tree_status.sh
+      - save_cache:
+          key: v1-vendor-{{ checksum "go.sum" }}
+          paths:
+            - /go/pkg

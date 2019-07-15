@@ -70,6 +70,11 @@ func run(c *cli.Context) error {
 		logrus.Fatalf("Argument %q is required", repositoryArg)
 	}
 	repository := c.String(repositoryArg)
+	from := c.String(fromArg)
+	to := c.String(toArg)
+	if from == to {
+		logrus.Fatal("No diff possible if `--from` equals `--to`")
+	}
 
 	// Prepare the environment
 	dir, err := ioutil.TempDir("", "go-modiff")
@@ -86,11 +91,7 @@ func run(c *cli.Context) error {
 	}
 
 	// Retrieve and diff the modules
-	mods := getModules(
-		dir,
-		c.String(fromArg),
-		c.String(toArg),
-	)
+	mods := getModules(dir, from, to)
 	diffModules(mods)
 	return nil
 }

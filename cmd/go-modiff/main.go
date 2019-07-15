@@ -99,31 +99,22 @@ func run(c *cli.Context) error {
 func diffModules(mods modules) {
 	var added, removed, changed []string
 	for name, mod := range mods {
-		// Added modules
+		// nolint: gocritic
 		if mod.before == "" {
 			added = append(
 				added,
 				fmt.Sprintf("- %s: %s", name, mod.after),
 			)
-			continue
-		}
-
-		// Added modules
-		if mod.before != mod.after {
-			changed = append(
-				changed,
-				fmt.Sprintf("- %s: %s → %s", name, mod.before, mod.after),
-			)
-			continue
-		}
-
-		// Removed modules
-		if mod.after == "" {
+		} else if mod.after == "" {
 			removed = append(
 				removed,
 				fmt.Sprintf("- %s: %s", name, mod.before),
 			)
-			continue
+		} else if mod.before != mod.after {
+			changed = append(
+				changed,
+				fmt.Sprintf("- %s: %s → %s", name, mod.before, mod.after),
+			)
 		}
 	}
 	sort.Strings(added)
@@ -163,9 +154,23 @@ func getModules(workDir, from, to string) modules {
 		scanner := bufio.NewScanner(strings.NewReader(input))
 		for scanner.Scan() {
 			// Skip version-less modules, like the local one
-			split := strings.SplitAfter(scanner.Text(), " ")
-			if len(split) != 2 {
+			split := strings.Split(scanner.Text(), " ")
+			if len(split) < 2 {
 				continue
+			}
+			// Rewrites have to be handled differently
+			if len(split) > 2 && split[2] == "=>" {
+				// Local rewrites without any version will be skipped
+				if len(split) == 4 {
+					continue
+				}
+
+				// Use the rewritten version and name if available
+				if len(split) == 5 {
+					split[0] = split[3]
+					split[1] = split[4]
+				}
+
 			}
 			name := strings.TrimSpace(split[0])
 			version := strings.TrimSpace(split[1])

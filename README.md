@@ -54,3 +54,8 @@ The following command line arguments are currently supported:
 | `--repository, -r` | repository to be used, like: github.com/owner/repo                  |
 | `--from, -f`       | the start of the comparison (any valid git rev) (default: "master") |
 | `--to, -t`         | the end of the comparison (any valid git ref) (default: "master")   |
+
+## Contributing
+
+You want to contribute to this project? Wow, thanks! So please just fork it and
+send me a pull request.

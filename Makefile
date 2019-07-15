@@ -12,7 +12,7 @@ define go-build
 endef
 
 all:
-	$(GO) build -ldflags '-s -w' -o $(BUILD_BIN_PATH)/go-modiff ./cmd
+	$(GO) build -ldflags '-s -w' -o $(BUILD_BIN_PATH)/go-modiff ./cmd/go-modiff
 
 ${GOLANGCI_LINT}:
 	$(call go-build,./vendor/github.com/golangci/golangci-lint/cmd/golangci-lint)

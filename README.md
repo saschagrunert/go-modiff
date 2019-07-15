@@ -9,13 +9,13 @@
 The tool can be installed via:
 
 ```shell
-go get github.com/saschagrunert/go-modiff/cmd
+go get github.com/saschagrunert/go-modiff/cmd/go-modiff
 ```
 
 After that, the application can be used like this:
 
 ```shell
-> ./build/bin/go-modiff -r github.com/cri-o/cri-o -f v1.15.0
+> go-modiff -r github.com/cri-o/cri-o -f v1.15.0
 INFO Cloning github.com/cri-o/cri-o into /tmp/go-modiff844484466
 INFO Retrieving modules of v1.15.0
 INFO Retrieving modules of master

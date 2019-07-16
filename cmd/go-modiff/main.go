@@ -68,19 +68,24 @@ func main() {
 func run(c *cli.Context) error {
 	// Validate the flags
 	if c.String(repositoryArg) == "" {
-		logrus.Fatalf("Argument %q is required", repositoryArg)
+		err := fmt.Errorf("argument %q is required", repositoryArg)
+		logrus.Error(err)
+		return err
 	}
 	repository := c.String(repositoryArg)
 	from := c.String(fromArg)
 	to := c.String(toArg)
 	if from == to {
-		logrus.Fatal("No diff possible if `--from` equals `--to`")
+		err := fmt.Errorf("no diff possible if `--from` equals `--to`")
+		logrus.Error(err)
+		return err
 	}
 
 	// Prepare the environment
 	dir, err := ioutil.TempDir("", "go-modiff")
 	if err != nil {
-		logrus.Fatal(err)
+		logrus.Error(err)
+		return err
 	}
 	defer os.RemoveAll(dir)
 	logrus.Infof("Cloning %s into %s", repository, dir)
@@ -88,11 +93,15 @@ func run(c *cli.Context) error {
 		fmt.Sprintf("git clone https://%s %s", c.String(repositoryArg), dir),
 		os.TempDir(),
 	); err != nil {
-		logrus.Fatal(err)
+		logrus.Error(err)
+		return err
 	}
 
 	// Retrieve and diff the modules
-	mods := getModules(dir, from, to)
+	mods, err := getModules(dir, from, to)
+	if err != nil {
+		return err
+	}
 	diffModules(mods)
 	return nil
 }
@@ -143,10 +152,16 @@ func diffModules(mods modules) {
 	forEach("Removed", removed)
 }
 
-func getModules(workDir, from, to string) modules {
+func getModules(workDir, from, to string) (modules, error) {
 	// Retrieve all modules
-	before := retrieveModules(from, workDir)
-	after := retrieveModules(to, workDir)
+	before, err := retrieveModules(from, workDir)
+	if err != nil {
+		return nil, err
+	}
+	after, err := retrieveModules(to, workDir)
+	if err != nil {
+		return nil, err
+	}
 
 	// Parse the modules
 	res := modules{}
@@ -202,21 +217,23 @@ func getModules(workDir, from, to string) modules {
 	forEach(after, func(res *versions, v string) { res.after = v })
 
 	logrus.Infof("%d modules found", len(res))
-	return res
+	return res, nil
 }
 
-func retrieveModules(rev, workDir string) string {
+func retrieveModules(rev, workDir string) (string, error) {
 	logrus.Infof("Retrieving modules of %s", rev)
 	_, err := execCmd("git checkout -f "+rev, workDir)
 	if err != nil {
-		logrus.Fatal(err)
+		logrus.Error(err)
+		return "", err
 	}
 
 	mods, err := execCmd("go list -m all", workDir)
 	if err != nil {
-		logrus.Fatal(err)
+		logrus.Error(err)
+		return "", err
 	}
-	return mods
+	return mods, nil
 }
 
 func execCmd(command, workDir string) (string, error) {

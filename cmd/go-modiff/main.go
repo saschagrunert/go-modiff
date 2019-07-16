@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/saschagrunert/ccli"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
@@ -35,7 +36,7 @@ func main() {
 	// Enable to modules
 	os.Setenv("GO111MODULE", "on")
 
-	app := cli.NewApp()
+	app := ccli.NewApp()
 	app.Name = "go-modiff"
 	app.Version = "0.2.0-dev"
 	app.Author = "Sascha Grunert"

@@ -38,7 +38,7 @@ func main() {
 
 	app := ccli.NewApp()
 	app.Name = "go-modiff"
-	app.Version = "0.2.0-dev"
+	app.Version = "0.3.0-dev"
 	app.Author = "Sascha Grunert"
 	app.Email = "mail@saschagrunert.de"
 	app.Usage = "Command line tool for diffing go module " +

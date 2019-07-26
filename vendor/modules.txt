@@ -2,6 +2,8 @@
 github.com/BurntSushi/toml
 # github.com/OpenPeeDeeP/depguard v0.0.0-20180806142446-a69c782687b2
 github.com/OpenPeeDeeP/depguard
+# github.com/cpuguy83/go-md2man v1.0.10
+github.com/cpuguy83/go-md2man/md2man
 # github.com/fatih/color v1.7.0
 github.com/fatih/color
 # github.com/fsnotify/fsnotify v1.4.7
@@ -165,8 +167,13 @@ github.com/nbutton23/zxcvbn-go/data
 github.com/pelletier/go-toml
 # github.com/pkg/errors v0.8.0
 github.com/pkg/errors
+# github.com/russross/blackfriday v1.5.2
+github.com/russross/blackfriday
 # github.com/saschagrunert/ccli v0.0.0-20190716095850-e981d954e07f
 github.com/saschagrunert/ccli
+# github.com/saschagrunert/go-docgen v0.1.3
+github.com/saschagrunert/go-docgen/pkg/docgen
+github.com/saschagrunert/go-docgen/internal/writer
 # github.com/sirupsen/logrus v1.4.2
 github.com/sirupsen/logrus
 # github.com/sourcegraph/go-diff v0.5.1

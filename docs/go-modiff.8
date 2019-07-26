@@ -1,0 +1,67 @@
+.TH "go-modiff" "8" " " "Sascha Grunert" "July 2019" 
+.nh
+.ad l
+
+
+.SH NAME
+.PP
+go\-modiff \- Command line tool for diffing go module dependency changes between versions
+
+
+.SH SYNOPSIS
+.PP
+go\-modiff
+
+.PP
+.RS
+
+.nf
+[\-\-from|\-f]=[value]
+[\-\-help|\-h]
+[\-\-repository|\-r]=[value]
+[\-\-to|\-t]=[value]
+[\-\-version|\-v]
+
+.fi
+.RE
+
+
+.SH DESCRIPTION
+.PP
+Command line tool for diffing go module dependency changes between versions
+
+.PP
+\fBUsage\fP:
+
+.PP
+.RS
+
+.nf
+go\-modiff [GLOBAL OPTIONS] command [COMMAND OPTIONS] [ARGUMENTS...]
+
+.fi
+.RE
+
+
+.SH GLOBAL OPTIONS
+.PP
+\fB\-\-from, \-f\fP="": the start of the comparison, any valid git rev (default: master)
+\fB\-\-help, \-h\fP: show help
+\fB\-\-repository, \-r\fP="": repository to be used, like: github.com/owner/repo
+\fB\-\-to, \-t\fP="": the end of the comparison, any valid git rev (default: master)
+\fB\-\-version, \-v\fP: print the version
+
+
+.SH COMMANDS
+.SH docs, d
+.PP
+generate the markdown or man page documentation and print it to stdout
+
+.PP
+\fB\-\-man\fP: print the man version
+\fB\-\-markdown\fP: print the markdown version
+
+.SH help, h
+.PP
+Shows a list of commands or help for one command
+

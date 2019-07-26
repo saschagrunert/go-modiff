@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/saschagrunert/ccli"
+	"github.com/saschagrunert/go-docgen/pkg/docgen"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
@@ -38,11 +39,12 @@ func main() {
 
 	app := ccli.NewApp()
 	app.Name = "go-modiff"
-	app.Version = "0.3.0-dev"
+	app.Version = "0.3.0"
 	app.Author = "Sascha Grunert"
 	app.Email = "mail@saschagrunert.de"
 	app.Usage = "Command line tool for diffing go module " +
 		"dependency changes between versions"
+	app.UsageText = app.Usage
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:  repositoryArg + ", r",
@@ -51,14 +53,31 @@ func main() {
 		cli.StringFlag{
 			Name:  fromArg + ", f",
 			Value: "master",
-			Usage: "the start of the comparison (any valid git rev)",
+			Usage: "the start of the comparison, any valid git rev",
 		},
 		cli.StringFlag{
 			Name:  toArg + ", t",
 			Value: "master",
-			Usage: "the end of the comparison (any valid git rev)",
+			Usage: "the end of the comparison, any valid git rev",
 		},
 	}
+	app.Commands = []cli.Command{{
+		Name:    "docs",
+		Aliases: []string{"d"},
+		Action:  docs,
+		Usage: "generate the markdown or man page documentation " +
+			"and print it to stdout",
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "markdown",
+				Usage: "print the markdown version",
+			},
+			cli.BoolFlag{
+				Name:  "man",
+				Usage: "print the man version",
+			},
+		},
+	}}
 	app.Action = run
 	if err := app.Run(os.Args); err != nil {
 		os.Exit(1)
@@ -264,4 +283,18 @@ func execCmd(command, workDir string) (string, error) {
 	}
 
 	return stdout.String(), nil
+}
+
+func docs(c *cli.Context) (err error) {
+	res := ""
+	if c.Bool("markdown") {
+		res, err = docgen.CliToMarkdown(c.App)
+	} else if c.Bool("man") {
+		res, err = docgen.CliToMan(c.App)
+	}
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%v\n", res)
+	return nil
 }

@@ -19,6 +19,7 @@ workflows:
   pipeline:
     jobs:
       - build
+      - docs
       - lint
       - vendor
 
@@ -42,6 +43,25 @@ jobs:
       - store_artifacts:
           path: build/bin
           destination: bin
+
+  docs:
+    executor: container
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-docs-{{ checksum "go.sum" }}
+      - run:
+          name: docs
+          command: make docs
+      - save_cache:
+          key: v1-docs-{{ checksum "go.sum" }}
+          paths:
+            - build/bin/go-modiff
+            - *gocache
+      - store_artifacts:
+          path: docs
+          destination: docs
 
   lint:
     executor: container

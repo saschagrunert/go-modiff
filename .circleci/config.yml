@@ -4,7 +4,7 @@ version: 2.1
 stdenv: &stdenv
   environment:
     GOCACHE: &gocache /tmp/go-build
-    WORKDIR: &workdir /go/src/github.com/cri-o/cri-o
+    WORKDIR: &workdir /go/src/github.com/saschagrunert/go-modiff
 
 executors:
   container:

@@ -1,6 +1,11 @@
-export GO111MODULE=off
-
 GO ?= go
+
+# test for go module support
+ifeq ($(shell go help mod >/dev/null 2>&1 && echo true), true)
+export GO_BUILD=GO111MODULE=on $(GO) build -mod=vendor
+else
+export GO_BUILD=$(GO) build
+endif
 
 BUILD_PATH := $(shell pwd)/build
 BUILD_BIN_PATH := ${BUILD_PATH}/bin

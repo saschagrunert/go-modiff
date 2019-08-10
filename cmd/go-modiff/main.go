@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/saschagrunert/ccli"
-	"github.com/saschagrunert/go-docgen/pkg/docgen"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
@@ -288,9 +287,9 @@ func execCmd(command, workDir string) (string, error) {
 func docs(c *cli.Context) (err error) {
 	res := ""
 	if c.Bool("markdown") {
-		res, err = docgen.CliToMarkdown(c.App)
+		res, err = c.App.ToMarkdown()
 	} else if c.Bool("man") {
-		res, err = docgen.CliToMan(c.App)
+		res, err = c.App.ToMan()
 	}
 	if err != nil {
 		return err

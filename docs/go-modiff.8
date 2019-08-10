@@ -1,4 +1,7 @@
-.TH "go-modiff" "8" " " "Sascha Grunert" "July 2019" 
+.TH "go-modiff" "8" " " 
+.nh
+.ad l
+.TH "Sascha Grunert" 
 .nh
 .ad l
 
@@ -46,9 +49,17 @@ go\-modiff [GLOBAL OPTIONS] command [COMMAND OPTIONS] [ARGUMENTS...]
 .SH GLOBAL OPTIONS
 .PP
 \fB\-\-from, \-f\fP="": the start of the comparison, any valid git rev (default: master)
+
+.PP
 \fB\-\-help, \-h\fP: show help
+
+.PP
 \fB\-\-repository, \-r\fP="": repository to be used, like: github.com/owner/repo
+
+.PP
 \fB\-\-to, \-t\fP="": the end of the comparison, any valid git rev (default: master)
+
+.PP
 \fB\-\-version, \-v\fP: print the version
 
 
@@ -59,6 +70,8 @@ generate the markdown or man page documentation and print it to stdout
 
 .PP
 \fB\-\-man\fP: print the man version
+
+.PP
 \fB\-\-markdown\fP: print the markdown version
 
 .SH help, h

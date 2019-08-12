@@ -1,6 +1,6 @@
 % go-modiff(8) 
+
 % Sascha Grunert
-% July 2019
 
 # NAME
 
@@ -31,10 +31,15 @@ go-modiff [GLOBAL OPTIONS] command [COMMAND OPTIONS] [ARGUMENTS...]
 # GLOBAL OPTIONS
 
 **--from, -f**="": the start of the comparison, any valid git rev (default: master)
+
 **--help, -h**: show help
+
 **--repository, -r**="": repository to be used, like: github.com/owner/repo
+
 **--to, -t**="": the end of the comparison, any valid git rev (default: master)
+
 **--version, -v**: print the version
+
 
 # COMMANDS
 
@@ -43,6 +48,7 @@ go-modiff [GLOBAL OPTIONS] command [COMMAND OPTIONS] [ARGUMENTS...]
 generate the markdown or man page documentation and print it to stdout
 
 **--man**: print the man version
+
 **--markdown**: print the markdown version
 
 ## help, h

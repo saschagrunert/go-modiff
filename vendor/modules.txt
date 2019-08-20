@@ -169,7 +169,7 @@ github.com/pelletier/go-toml
 github.com/pkg/errors
 # github.com/russross/blackfriday v1.5.2
 github.com/russross/blackfriday
-# github.com/saschagrunert/ccli v0.0.0-20190716095850-e981d954e07f
+# github.com/saschagrunert/ccli v0.0.0-20190805130407-05e6f251faf6
 github.com/saschagrunert/ccli
 # github.com/sirupsen/logrus v1.4.2
 github.com/sirupsen/logrus
@@ -190,7 +190,7 @@ github.com/spf13/pflag
 github.com/spf13/viper
 # github.com/timakin/bodyclose v0.0.0-20190407043127-4a873e97b2bb
 github.com/timakin/bodyclose/passes/bodyclose
-# github.com/urfave/cli v1.21.1-0.20190810090116-7e49cc210a23
+# github.com/urfave/cli v1.21.1-0.20190817182405-23c83030263f
 github.com/urfave/cli
 # golang.org/x/sys v0.0.0-20190422165155-953cdadca894
 golang.org/x/sys/unix

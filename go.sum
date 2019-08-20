@@ -134,6 +134,8 @@ github.com/russross/blackfriday v1.5.2/go.mod h1:JO/DiYxRf+HjHt06OyowR9PTA263kcR
 github.com/ryanuber/go-glob v0.0.0-20170128012129-256dc444b735/go.mod h1:807d1WSdnB0XRJzKNil9Om6lcp/3a0v4qIHxIXzX/Yc=
 github.com/saschagrunert/ccli v0.0.0-20190716095850-e981d954e07f h1:Xl3dOksVfAoN/E+vydUHneCGjYBHM24CzhW2oYLKhk0=
 github.com/saschagrunert/ccli v0.0.0-20190716095850-e981d954e07f/go.mod h1:k6s1M5GngF3r37axCDc4tEZ+ANhLMjrZFDsPW0UyMKU=
+github.com/saschagrunert/ccli v0.0.0-20190805130407-05e6f251faf6 h1:Pa36GDXNaC2cM2WMoGgGYAb/9tqRIy3G5ERUs7O6DPY=
+github.com/saschagrunert/ccli v0.0.0-20190805130407-05e6f251faf6/go.mod h1:1tb/84q0+lPjoxXuQxVw1i8VZDr1PNq7FoBDVKs3HU4=
 github.com/saschagrunert/go-docgen v0.1.2 h1:dCYb1ebJK+De0uJh7w8et6UZFGJRU7d0uAJlYgPpQkQ=
 github.com/saschagrunert/go-docgen v0.1.2/go.mod h1:7plAdn9hazBASf1zwF920hbPb2iHFXTR86z+3inPCJM=
 github.com/saschagrunert/go-docgen v0.1.3 h1:ePaA7tUzLQzg+DrMfXkp4lW6Qa1q40fyvOpmIr4o1tY=
@@ -167,8 +169,11 @@ github.com/timakin/bodyclose v0.0.0-20190407043127-4a873e97b2bb h1:lI9ufgFfvuqRc
 github.com/timakin/bodyclose v0.0.0-20190407043127-4a873e97b2bb/go.mod h1:Qimiffbc6q9tBWlVV6x0P9sat/ao1xEkREYPPj9hphk=
 github.com/urfave/cli v1.20.0 h1:fDqGv3UG/4jbVl/QkFwEdddtEDjh/5Ov6X+0B/3bPaw=
 github.com/urfave/cli v1.20.0/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijbERA=
+github.com/urfave/cli v1.21.0/go.mod h1:lxDj6qX9Q6lWQxIrbrT0nwecwUtRnhVZAJjJZrVUZZQ=
 github.com/urfave/cli v1.21.1-0.20190810090116-7e49cc210a23 h1:NxUJLXipYzLeT6bg0/cGxDGX5hzy+MkW9WMYJ94M6/U=
 github.com/urfave/cli v1.21.1-0.20190810090116-7e49cc210a23/go.mod h1:qXyCeJubPqsgeiLd3kvHOGHHSrQcNdjZ2ScXIcVZK/I=
+github.com/urfave/cli v1.21.1-0.20190817182405-23c83030263f h1:xKDKjIsL76VUyHcA0G4Qe1cIAUB/nrq6Pt8D411bd1g=
+github.com/urfave/cli v1.21.1-0.20190817182405-23c83030263f/go.mod h1:qXyCeJubPqsgeiLd3kvHOGHHSrQcNdjZ2ScXIcVZK/I=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/valyala/fasthttp v1.2.0/go.mod h1:4vX61m6KN+xDduDNwXrhIAVZaZaZiQ1luJk8LWSxF3s=
 github.com/valyala/quicktemplate v1.1.1/go.mod h1:EH+4AkTd43SvgIbQHYu59/cJyxDoOVRUAfrukLPuGJ4=

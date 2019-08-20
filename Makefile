@@ -9,7 +9,7 @@ endif
 
 BUILD_PATH := build
 GOLANGCI_LINT := $(BUILD_PATH)/golangci-lint
-GO_MODIFF := go-modiff
+GO_MODIFF := $(BUILD_PATH)/go-modiff
 
 define go-build
 	$(shell cd `pwd` && $(GO) build -ldflags '-s -w' \

@@ -55,7 +55,7 @@ jobs:
           name: docs
           command: |
             make docs
-            hack/git-status
+            .circleci/git-status
       - save_cache:
           key: v1-docs-{{ checksum "go.sum" }}
           paths:
@@ -92,7 +92,7 @@ jobs:
           name: check vendoring
           command: |
             make vendor
-            hack/git-status
+            .circleci/git-status
       - save_cache:
           key: v1-vendor-{{ checksum "go.sum" }}
           paths:

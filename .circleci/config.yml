@@ -38,10 +38,10 @@ jobs:
       - save_cache:
           key: v1-build-{{ checksum "go.sum" }}
           paths:
-            - build/bin/go-modiff
+            - build/go-modiff
             - *gocache
       - store_artifacts:
-          path: build/bin
+          path: build
           destination: bin
 
   docs:
@@ -53,11 +53,13 @@ jobs:
             - v1-docs-{{ checksum "go.sum" }}
       - run:
           name: docs
-          command: make docs
+          command: |
+            make docs
+            hack/git-status
       - save_cache:
           key: v1-docs-{{ checksum "go.sum" }}
           paths:
-            - build/bin/go-modiff
+            - build/go-modiff
             - *gocache
       - store_artifacts:
           path: docs
@@ -77,7 +79,7 @@ jobs:
           key: v1-golangci-lint-{{ checksum "go.sum" }}
           paths:
             - *gocache
-            - build/bin/golangci-lint
+            - build/golangci-lint
 
   vendor:
     executor: container
@@ -90,7 +92,7 @@ jobs:
           name: check vendoring
           command: |
             make vendor
-            hack/tree_status.sh
+            hack/git-status
       - save_cache:
           key: v1-vendor-{{ checksum "go.sum" }}
           paths:

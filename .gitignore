@@ -7,3 +7,4 @@
 *.so
 *.test
 build
+coverprofile

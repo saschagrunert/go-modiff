@@ -1,6 +1,7 @@
 # go-modiff 📔
 
 [![CircleCI](https://circleci.com/gh/saschagrunert/go-modiff.svg?style=shield)](https://circleci.com/gh/saschagrunert/go-modiff)
+[![codecov](https://codecov.io/gh/saschagrunert/go-modiff/branch/master/graph/badge.svg)](https://codecov.io/gh/saschagrunert/go-modiff)
 
 ## Command line tool for diffing go module dependency changes between versions
 
@@ -25,13 +26,16 @@ INFO 11 modules changed
 INFO 0 modules removed
 INFO Done, the result will be printed to `stdout`
 ```
+
 ```markdown
 # Dependencies
 
 ## Added
+
 - github.com/creack/pty: v1.1.7
 
 ## Changed
+
 - github.com/containerd/go-runc: 7d11b49 → 9007c24
 - github.com/containerd/project: 831961d → 7fb81da
 - github.com/containerd/ttrpc: 2a805f7 → 1fb3814
@@ -45,6 +49,7 @@ INFO Done, the result will be printed to `stdout`
 - honnef.co/go/tools: e561f67 → ea95bdf
 
 ## Removed
+
 _Nothing has changed._
 ```
 

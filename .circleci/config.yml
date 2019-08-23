@@ -21,6 +21,7 @@ workflows:
       - build
       - docs
       - lint
+      - test
       - vendor
 
 jobs:
@@ -80,6 +81,27 @@ jobs:
           paths:
             - *gocache
             - build/golangci-lint
+
+  test:
+    executor: container
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-test-{{ checksum "go.sum" }}
+      - run:
+          name: test
+          command: make test
+      - run:
+          name: code coverage
+          command: make codecov
+      - store_test_results:
+          path: build/junit
+      - save_cache:
+          key: v1-test-{{ checksum "go.sum" }}
+          paths:
+            - *gocache
+            - build/ginkgo
 
   vendor:
     executor: container

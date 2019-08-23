@@ -55,8 +55,7 @@ lint: $(GOLANGCI_LINT)
 test: $(GINKGO)
 	rm -rf $(COVERAGE_PATH) && mkdir -p $(COVERAGE_PATH)
 	rm -rf $(JUNIT_PATH) && mkdir -p $(JUNIT_PATH)
-	$(BUILD_PATH)/ginkgo \
-		$(TESTFLAGS) \
+	$(BUILD_PATH)/ginkgo $(TESTFLAGS) \
 		-r -p \
 		--cover \
 		--randomizeAllSpecs \

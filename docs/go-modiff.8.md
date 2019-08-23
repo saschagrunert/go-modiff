@@ -13,6 +13,7 @@ go-modiff
 ```
 [--from|-f]=[value]
 [--help|-h]
+[--link|-l]
 [--repository|-r]=[value]
 [--to|-t]=[value]
 [--version|-v]
@@ -33,6 +34,8 @@ go-modiff [GLOBAL OPTIONS] command [COMMAND OPTIONS] [ARGUMENTS...]
 **--from, -f**="": the start of the comparison, any valid git rev (default: master)
 
 **--help, -h**: show help
+
+**--link, -l**: add diff links to the markdown output
 
 **--repository, -r**="": repository to be used, like: github.com/owner/repo
 

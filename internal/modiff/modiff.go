@@ -25,6 +25,7 @@ const (
 	RepositoryArg = "repository"
 	FromArg       = "from"
 	ToArg         = "to"
+	LinkArg       = "link"
 )
 
 func Run(c *cli.Context) (string, error) {
@@ -50,7 +51,7 @@ func Run(c *cli.Context) (string, error) {
 	defer os.RemoveAll(dir)
 	logrus.Infof("Cloning %s into %s", repository, dir)
 	if _, err := execCmd(
-		fmt.Sprintf("git clone https://%s %s", c.String(RepositoryArg), dir),
+		fmt.Sprintf("git clone %s %s", repo(c.String(RepositoryArg)), dir),
 		os.TempDir(),
 	); err != nil {
 		return logErr(err.Error())
@@ -61,7 +62,11 @@ func Run(c *cli.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return diffModules(mods), nil
+	return diffModules(mods, c.Bool(LinkArg)), nil
+}
+
+func repo(name string) string {
+	return "https://" + name
 }
 
 func logErr(format string, a ...interface{}) (string, error) {
@@ -70,25 +75,34 @@ func logErr(format string, a ...interface{}) (string, error) {
 	return "", err
 }
 
-func diffModules(mods modules) string {
+func diffModules(mods modules, addLinks bool) string {
 	var added, removed, changed []string
 	for name, mod := range mods {
-		// nolint: gocritic
-		if mod.before == "" {
-			added = append(
-				added,
-				fmt.Sprintf("- %s: %s", name, mod.after),
-			)
+		txt := fmt.Sprintf("- %s: ", name)
+		if mod.before == "" { // nolint: gocritic
+			if addLinks {
+				txt += fmt.Sprintf("[%s](%s/tree/%s)",
+					mod.after, repo(name), mod.after)
+			} else {
+				txt += mod.after
+			}
+			added = append(added, txt)
 		} else if mod.after == "" {
-			removed = append(
-				removed,
-				fmt.Sprintf("- %s: %s", name, mod.before),
-			)
+			if addLinks {
+				txt += fmt.Sprintf("[%s](%s/tree/%s)",
+					mod.before, repo(name), mod.before)
+			} else {
+				txt += mod.before
+			}
+			removed = append(removed, txt)
 		} else if mod.before != mod.after {
-			changed = append(
-				changed,
-				fmt.Sprintf("- %s: %s → %s", name, mod.before, mod.after),
-			)
+			if addLinks {
+				txt += fmt.Sprintf("[%s → %s](%s/compare/%s...%s)",
+					mod.before, mod.after, repo(name), mod.before, mod.after)
+			} else {
+				txt += fmt.Sprintf("%s → %s", mod.before, mod.after)
+			}
+			changed = append(changed, txt)
 		}
 	}
 	sort.Strings(added)

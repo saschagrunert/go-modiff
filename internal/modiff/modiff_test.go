@@ -25,6 +25,20 @@ var _ = t.Describe("Run", func() {
 ## Removed
 _Nothing has changed._
 `
+
+	const expectedWithLinks = `# Dependencies
+
+## Added
+- github.com/saschagrunert/ccli: [e981d95](https://github.com/saschagrunert/ccli/tree/e981d95)
+
+## Changed
+- github.com/fatih/color: [v1.6.0 → v1.7.0](https://github.com/fatih/color/compare/v1.6.0...v1.7.0)
+- github.com/mattn/go-colorable: [v0.0.9 → v0.1.2](https://github.com/mattn/go-colorable/compare/v0.0.9...v0.1.2)
+- github.com/mattn/go-isatty: [v0.0.3 → v0.0.8](https://github.com/mattn/go-isatty/compare/v0.0.3...v0.0.8)
+
+## Removed
+_Nothing has changed._
+`
 	const (
 		repo = "github.com/saschagrunert/go-modiff"
 		from = "v0.1.0"
@@ -50,6 +64,22 @@ _Nothing has changed._
 		// Then
 		Expect(err).To(BeNil())
 		Expect(res).To(Equal(expected))
+	})
+
+	It("should succeed with links", func() {
+		// Given
+		flagSet.String(modiff.RepositoryArg, repo, "")
+		flagSet.String(modiff.FromArg, from, "")
+		flagSet.String(modiff.ToArg, to, "")
+		flagSet.Bool(modiff.LinkArg, true, "")
+		context := cli.NewContext(nil, flagSet, nil)
+
+		// When
+		res, err := modiff.Run(context)
+
+		// Then
+		Expect(err).To(BeNil())
+		Expect(res).To(Equal(expectedWithLinks))
 	})
 
 	It("should fail if context is nil", func() {

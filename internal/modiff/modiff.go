@@ -49,10 +49,15 @@ func Run(c *cli.Context) (string, error) {
 		return logErr(err.Error())
 	}
 	defer os.RemoveAll(dir)
-	logrus.Infof("Cloning %s into %s", repository, dir)
+
+	logrus.Infof("Setting up repository %s into %s", repository, dir)
+
+	if _, err := execCmd("git init", dir); err != nil {
+		return logErr(err.Error())
+	}
+
 	if _, err := execCmd(
-		fmt.Sprintf("git clone %s %s", repo(c.String(RepositoryArg)), dir),
-		os.TempDir(),
+		"git remote add origin "+repo(c.String(RepositoryArg)), dir,
 	); err != nil {
 		return logErr(err.Error())
 	}
@@ -201,7 +206,13 @@ func getModules(workDir, from, to string) (modules, error) {
 
 func retrieveModules(rev, workDir string) (string, error) {
 	logrus.Infof("Retrieving modules of %s", rev)
-	_, err := execCmd("git checkout -f "+rev, workDir)
+	_, err := execCmd("git fetch --depth=1 origin "+rev, workDir)
+	if err != nil {
+		logrus.Error(err)
+		return "", err
+	}
+
+	_, err = execCmd("git checkout -f FETCH_HEAD", workDir)
 	if err != nil {
 		logrus.Error(err)
 		return "", err

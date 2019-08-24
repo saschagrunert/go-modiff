@@ -19,6 +19,7 @@ workflows:
   pipeline:
     jobs:
       - build
+      - build-static
       - docs
       - lint
       - test
@@ -38,6 +39,27 @@ jobs:
           command: make
       - save_cache:
           key: v1-build-{{ checksum "go.sum" }}
+          paths:
+            - build/go-modiff
+            - *gocache
+      - store_artifacts:
+          path: build
+          destination: bin
+
+  build-static:
+    executor: container
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-build-static-{{ checksum "go.sum" }}
+      - run: go version
+      - run:
+          name: build
+          command: |
+            make build/go-modiff.static
+      - save_cache:
+          key: v1-build-static-{{ checksum "go.sum" }}
           paths:
             - build/go-modiff
             - *gocache

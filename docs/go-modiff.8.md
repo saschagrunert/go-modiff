@@ -11,6 +11,7 @@ go-modiff - Command line tool for diffing go module dependency changes between v
 go-modiff
 
 ```
+[--debug|-d]
 [--from|-f]=[value]
 [--help|-h]
 [--link|-l]
@@ -30,6 +31,8 @@ go-modiff [GLOBAL OPTIONS] command [COMMAND OPTIONS] [ARGUMENTS...]
 ```
 
 # GLOBAL OPTIONS
+
+**--debug, -d**: enable debug output
 
 **--from, -f**="": the start of the comparison, any valid git rev (default: master)
 

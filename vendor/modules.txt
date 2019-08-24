@@ -235,7 +235,7 @@ github.com/spf13/pflag
 github.com/spf13/viper
 # github.com/timakin/bodyclose v0.0.0-20190407043127-4a873e97b2bb
 github.com/timakin/bodyclose/passes/bodyclose
-# github.com/urfave/cli v1.21.1-0.20190817182405-23c83030263f
+# github.com/urfave/cli v1.21.1-0.20190823215139-392c1de1a2b3
 github.com/urfave/cli
 # golang.org/x/net v0.0.0-20190313220215-9f648a60d977
 golang.org/x/net/html/charset

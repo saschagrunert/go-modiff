@@ -80,6 +80,7 @@ The following command line arguments are currently supported:
 | `--from, -f`       | the start of the comparison (any valid git rev) (default: "master") |
 | `--to, -t`         | the end of the comparison (any valid git rev) (default: "master")   |
 | `--link, -l`       | add diff lnks to the markdown output (default: false)               |
+| `--debug, -d`      | enable debug output (default: false)                                |
 
 ## Contributing
 

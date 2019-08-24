@@ -13,11 +13,12 @@ JUNIT_PATH := $(BUILD_PATH)/junit
 
 GOLANGCI_LINT := $(BUILD_PATH)/golangci-lint
 GO_MODIFF := $(BUILD_PATH)/go-modiff
+GO_MODIFF_STATIC := $(BUILD_PATH)/go-modiff.static
 GINKGO := $(BUILD_PATH)/ginkgo
 
 define go-build
-	$(shell cd `pwd` && $(GO) build -ldflags '-s -w' \
-		-o $(BUILD_PATH)/$(shell basename $(1)) $(1))
+	cd `pwd` && $(GO) build -ldflags '-s -w $(2)' \
+		-o $(BUILD_PATH)/$(shell basename $(1)) $(1)
 	@echo > /dev/null
 endef
 
@@ -40,6 +41,10 @@ docs: $(GO_MODIFF)
 .PHONY: $(GO_MODIFF)
 $(GO_MODIFF):
 	$(call go-build,./cmd/go-modiff)
+
+.PHONY: $(GO_MODIFF_STATIC)
+$(GO_MODIFF_STATIC):
+	$(call go-build,./cmd/go-modiff,-linkmode external -extldflags "-static -lm")
 
 $(GOLANGCI_LINT):
 	$(call go-build,./vendor/github.com/golangci/golangci-lint/cmd/golangci-lint)

@@ -181,6 +181,8 @@ github.com/urfave/cli v1.21.1-0.20190810090116-7e49cc210a23 h1:NxUJLXipYzLeT6bg0
 github.com/urfave/cli v1.21.1-0.20190810090116-7e49cc210a23/go.mod h1:qXyCeJubPqsgeiLd3kvHOGHHSrQcNdjZ2ScXIcVZK/I=
 github.com/urfave/cli v1.21.1-0.20190817182405-23c83030263f h1:xKDKjIsL76VUyHcA0G4Qe1cIAUB/nrq6Pt8D411bd1g=
 github.com/urfave/cli v1.21.1-0.20190817182405-23c83030263f/go.mod h1:qXyCeJubPqsgeiLd3kvHOGHHSrQcNdjZ2ScXIcVZK/I=
+github.com/urfave/cli v1.21.1-0.20190823215139-392c1de1a2b3 h1:gyP8fieoTEvM1ZnXjnZ8Kfmwzu4d0fORQ62c98xcSBk=
+github.com/urfave/cli v1.21.1-0.20190823215139-392c1de1a2b3/go.mod h1:b3D7uWrF2GilkNgYpgcg6J+JMUw7ehmNkE8sZdliGLc=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/valyala/fasthttp v1.2.0/go.mod h1:4vX61m6KN+xDduDNwXrhIAVZaZaZiQ1luJk8LWSxF3s=
 github.com/valyala/quicktemplate v1.1.1/go.mod h1:EH+4AkTd43SvgIbQHYu59/cJyxDoOVRUAfrukLPuGJ4=

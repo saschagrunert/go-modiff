@@ -29,6 +29,9 @@ const (
 )
 
 func Run(c *cli.Context) (string, error) {
+	// Enable to modules
+	os.Setenv("GO111MODULE", "on")
+
 	if c == nil {
 		return logErr("cli context is nil")
 	}
@@ -50,14 +53,14 @@ func Run(c *cli.Context) (string, error) {
 	}
 	defer os.RemoveAll(dir)
 
-	logrus.Infof("Setting up repository %s into %s", repository, dir)
+	logrus.Infof("Setting up repository %s", repository)
 
-	if _, err := execCmd("git init", dir); err != nil {
+	if _, err := execCmd(dir, "git init"); err != nil {
 		return logErr(err.Error())
 	}
 
 	if _, err := execCmd(
-		"git remote add origin "+repo(c.String(RepositoryArg)), dir,
+		dir, "git remote add origin %s", toURL(c.String(RepositoryArg)),
 	); err != nil {
 		return logErr(err.Error())
 	}
@@ -70,7 +73,7 @@ func Run(c *cli.Context) (string, error) {
 	return diffModules(mods, c.Bool(LinkArg)), nil
 }
 
-func repo(name string) string {
+func toURL(name string) string {
 	return "https://" + name
 }
 
@@ -87,7 +90,7 @@ func diffModules(mods modules, addLinks bool) string {
 		if mod.before == "" { // nolint: gocritic
 			if addLinks {
 				txt += fmt.Sprintf("[%s](%s/tree/%s)",
-					mod.after, repo(name), mod.after)
+					mod.after, toURL(name), mod.after)
 			} else {
 				txt += mod.after
 			}
@@ -95,7 +98,7 @@ func diffModules(mods modules, addLinks bool) string {
 		} else if mod.after == "" {
 			if addLinks {
 				txt += fmt.Sprintf("[%s](%s/tree/%s)",
-					mod.before, repo(name), mod.before)
+					mod.before, toURL(name), mod.before)
 			} else {
 				txt += mod.before
 			}
@@ -103,7 +106,7 @@ func diffModules(mods modules, addLinks bool) string {
 		} else if mod.before != mod.after {
 			if addLinks {
 				txt += fmt.Sprintf("[%s → %s](%s/compare/%s...%s)",
-					mod.before, mod.after, repo(name), mod.before, mod.after)
+					mod.before, mod.after, toURL(name), mod.before, mod.after)
 			} else {
 				txt += fmt.Sprintf("%s → %s", mod.before, mod.after)
 			}
@@ -149,7 +152,6 @@ func getModules(workDir, from, to string) (modules, error) {
 
 	// Parse the modules
 	res := modules{}
-
 	forEach := func(input string, do func(res *versions, version string)) {
 		scanner := bufio.NewScanner(strings.NewReader(input))
 		for scanner.Scan() {
@@ -170,7 +172,6 @@ func getModules(workDir, from, to string) (modules, error) {
 					split[0] = split[3]
 					split[1] = split[4]
 				}
-
 			}
 			name := strings.TrimSpace(split[0])
 			version := strings.TrimSpace(split[1])
@@ -206,19 +207,19 @@ func getModules(workDir, from, to string) (modules, error) {
 
 func retrieveModules(rev, workDir string) (string, error) {
 	logrus.Infof("Retrieving modules of %s", rev)
-	_, err := execCmd("git fetch --depth=1 origin "+rev, workDir)
+	_, err := execCmd(workDir, "git fetch --depth=1 origin %s", rev)
 	if err != nil {
 		logrus.Error(err)
 		return "", err
 	}
 
-	_, err = execCmd("git checkout -f FETCH_HEAD", workDir)
+	_, err = execCmd(workDir, "git checkout -f FETCH_HEAD")
 	if err != nil {
 		logrus.Error(err)
 		return "", err
 	}
 
-	mods, err := execCmd("go list -m all", workDir)
+	mods, err := execCmd(workDir, "go list -m all")
 	if err != nil {
 		logrus.Error(err)
 		return "", err
@@ -226,23 +227,19 @@ func retrieveModules(rev, workDir string) (string, error) {
 	return mods, nil
 }
 
-func execCmd(command, workDir string) (string, error) {
+func execCmd(workDir, format string, args ...interface{}) (string, error) {
+	var (
+		cmd            *exec.Cmd
+		stdout, stderr bytes.Buffer
+	)
+	command := fmt.Sprintf(format, args...)
 	c := strings.Split(command, " ")
-
-	var cmd *exec.Cmd
-	if len(c) == 0 {
-		cmd = exec.Command(c[0])
-	} else {
-		cmd = exec.Command(c[0], c[1:]...)
-	}
+	cmd = exec.Command(c[0], c[1:]...)
 	cmd.Dir = workDir
-
-	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
 	err := cmd.Run()
-
 	if err != nil {
 		return "", fmt.Errorf(
 			"`%v` failed: %v %v (%v)",
@@ -253,5 +250,9 @@ func execCmd(command, workDir string) (string, error) {
 		)
 	}
 
-	return stdout.String(), nil
+	output := stdout.String()
+	if output != "" {
+		logrus.Debug(output)
+	}
+	return output, nil
 }

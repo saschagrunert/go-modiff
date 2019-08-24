@@ -12,16 +12,11 @@ import (
 )
 
 func main() {
-	// Init the logging facade
-	logrus.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true})
-	logrus.SetLevel(logrus.DebugLevel)
-
-	// Enable to modules
-	os.Setenv("GO111MODULE", "on")
+	const debugFlag = "debug"
 
 	app := ccli.NewApp()
 	app.Name = "go-modiff"
-	app.Version = "0.6.0"
+	app.Version = "0.7.0"
 	app.Author = "Sascha Grunert"
 	app.Email = "mail@saschagrunert.de"
 	app.Usage = "Command line tool for diffing go module " +
@@ -46,6 +41,10 @@ func main() {
 			Name:  modiff.LinkArg + ", l",
 			Usage: "add diff links to the markdown output",
 		},
+		cli.BoolFlag{
+			Name:  debugFlag + ", d",
+			Usage: "enable debug output",
+		},
 	}
 	app.Commands = []cli.Command{{
 		Name:    "docs",
@@ -65,6 +64,16 @@ func main() {
 		},
 	}}
 	app.Action = func(c *cli.Context) error {
+		// Init the logging facade
+		logrus.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true})
+		if c.Bool("debug") {
+			logrus.SetLevel(logrus.DebugLevel)
+			logrus.Debug("Enabled debug output")
+		} else {
+			logrus.SetLevel(logrus.InfoLevel)
+		}
+
+		// Run modiff
 		res, err := modiff.Run(c)
 		if err != nil {
 			return err

@@ -17,7 +17,7 @@ After that, the application can be used like this:
 
 ```shell
 > go-modiff -r github.com/cri-o/cri-o -f v1.15.0
-INFO Setting up repository github.com/cri-o/cri-o into /tmp/go-modiff844484466
+INFO Setting up repository github.com/cri-o/cri-o
 INFO Retrieving modules of v1.15.0
 INFO Retrieving modules of master
 INFO 385 modules found

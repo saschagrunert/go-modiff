@@ -57,6 +57,10 @@ generate the markdown or man page documentation and print it to stdout
 
 **--markdown**: print the markdown version
 
+## fish, f
+
+generate the fish shell completion
+
 ## help, h
 
 Shows a list of commands or help for one command

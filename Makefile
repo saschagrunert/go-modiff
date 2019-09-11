@@ -37,6 +37,7 @@ codecov:
 docs: $(GO_MODIFF)
 	$(GO_MODIFF) d --markdown > docs/go-modiff.8.md
 	$(GO_MODIFF) d --man > docs/go-modiff.8
+	$(GO_MODIFF) f > completions/go-modiff.fish
 
 .PHONY: $(GO_MODIFF)
 $(GO_MODIFF):

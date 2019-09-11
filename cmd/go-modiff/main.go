@@ -24,18 +24,21 @@ func main() {
 	app.UsageText = app.Usage
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
-			Name:  modiff.RepositoryArg + ", r",
-			Usage: "repository to be used, like: github.com/owner/repo",
+			Name:      modiff.RepositoryArg + ", r",
+			Usage:     "repository to be used, like: github.com/owner/repo",
+			TakesFile: false,
 		},
 		cli.StringFlag{
-			Name:  modiff.FromArg + ", f",
-			Value: "master",
-			Usage: "the start of the comparison, any valid git rev",
+			Name:      modiff.FromArg + ", f",
+			Value:     "master",
+			Usage:     "the start of the comparison, any valid git rev",
+			TakesFile: false,
 		},
 		cli.StringFlag{
-			Name:  modiff.ToArg + ", t",
-			Value: "master",
-			Usage: "the end of the comparison, any valid git rev",
+			Name:      modiff.ToArg + ", t",
+			Value:     "master",
+			Usage:     "the end of the comparison, any valid git rev",
+			TakesFile: false,
 		},
 		cli.BoolFlag{
 			Name:  modiff.LinkArg + ", l",

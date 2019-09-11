@@ -37,6 +37,7 @@ linters:
     - unparam
     - unused
     - varcheck
+    # - funlen
 linters-settings:
   errcheck:
     check-type-assertions: true

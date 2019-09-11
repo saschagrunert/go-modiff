@@ -77,6 +77,10 @@ func toURL(name string) string {
 	return "https://" + name
 }
 
+func sanitizeTag(tag string) string {
+	return strings.TrimSuffix(tag, "+incompatible")
+}
+
 func logErr(format string, a ...interface{}) (string, error) {
 	err := fmt.Errorf(format, a...)
 	logrus.Error(err)
@@ -90,7 +94,7 @@ func diffModules(mods modules, addLinks bool) string {
 		if mod.before == "" { // nolint: gocritic
 			if addLinks {
 				txt += fmt.Sprintf("[%s](%s/tree/%s)",
-					mod.after, toURL(name), mod.after)
+					mod.after, toURL(name), sanitizeTag(mod.after))
 			} else {
 				txt += mod.after
 			}
@@ -98,7 +102,7 @@ func diffModules(mods modules, addLinks bool) string {
 		} else if mod.after == "" {
 			if addLinks {
 				txt += fmt.Sprintf("[%s](%s/tree/%s)",
-					mod.before, toURL(name), mod.before)
+					mod.before, toURL(name), sanitizeTag(mod.before))
 			} else {
 				txt += mod.before
 			}
@@ -106,7 +110,8 @@ func diffModules(mods modules, addLinks bool) string {
 		} else if mod.before != mod.after {
 			if addLinks {
 				txt += fmt.Sprintf("[%s → %s](%s/compare/%s...%s)",
-					mod.before, mod.after, toURL(name), mod.before, mod.after)
+					mod.before, mod.after, toURL(name),
+					sanitizeTag(mod.before), sanitizeTag(mod.after))
 			} else {
 				txt += fmt.Sprintf("%s → %s", mod.before, mod.after)
 			}

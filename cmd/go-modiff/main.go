@@ -62,6 +62,11 @@ func main() {
 				Usage: "print the man version",
 			},
 		},
+	}, {
+		Name:    "fish",
+		Aliases: []string{"f"},
+		Action:  fish,
+		Usage:   "generate the fish shell completion",
 	}}
 	app.Action = func(c *cli.Context) error {
 		// Init the logging facade
@@ -98,5 +103,14 @@ func docs(c *cli.Context) (err error) {
 		return err
 	}
 	fmt.Printf("%v\n", res)
+	return nil
+}
+
+func fish(c *cli.Context) (err error) {
+	res, err := c.App.ToFishCompletion()
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%v", res)
 	return nil
 }

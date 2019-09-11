@@ -77,6 +77,10 @@ func toURL(name string) string {
 	return "https://" + name
 }
 
+func isGitHubURL(name string) bool {
+	return strings.HasPrefix(name, "github.com")
+}
+
 func sanitizeTag(tag string) string {
 	return strings.TrimSuffix(tag, "+incompatible")
 }
@@ -92,7 +96,7 @@ func diffModules(mods modules, addLinks bool) string {
 	for name, mod := range mods {
 		txt := fmt.Sprintf("- %s: ", name)
 		if mod.before == "" { // nolint: gocritic
-			if addLinks {
+			if addLinks && isGitHubURL(name) {
 				txt += fmt.Sprintf("[%s](%s/tree/%s)",
 					mod.after, toURL(name), sanitizeTag(mod.after))
 			} else {
@@ -100,7 +104,7 @@ func diffModules(mods modules, addLinks bool) string {
 			}
 			added = append(added, txt)
 		} else if mod.after == "" {
-			if addLinks {
+			if addLinks && isGitHubURL(name) {
 				txt += fmt.Sprintf("[%s](%s/tree/%s)",
 					mod.before, toURL(name), sanitizeTag(mod.before))
 			} else {
@@ -108,7 +112,7 @@ func diffModules(mods modules, addLinks bool) string {
 			}
 			removed = append(removed, txt)
 		} else if mod.before != mod.after {
-			if addLinks {
+			if addLinks && isGitHubURL(name) {
 				txt += fmt.Sprintf("[%s → %s](%s/compare/%s...%s)",
 					mod.before, mod.after, toURL(name),
 					sanitizeTag(mod.before), sanitizeTag(mod.after))

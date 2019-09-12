@@ -8,5 +8,5 @@ require (
 	github.com/onsi/gomega v1.7.0
 	github.com/saschagrunert/ccli v1.0.2-0.20190805130407-05e6f251faf6
 	github.com/sirupsen/logrus v1.4.2
-	github.com/urfave/cli v1.22.0
+	github.com/urfave/cli v1.22.1
 )

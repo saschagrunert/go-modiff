@@ -22,6 +22,7 @@ func main() {
 	app.Usage = "Command line tool for diffing go module " +
 		"dependency changes between versions"
 	app.UsageText = app.Usage
+	app.UseShortOptionHandling = true
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:      modiff.RepositoryArg + ", r",

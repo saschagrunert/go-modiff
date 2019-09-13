@@ -92,18 +92,6 @@ _Nothing has changed._
 		Expect(res).To(BeEmpty())
 	})
 
-	It("should fail if 'repository' not given", func() {
-		// Given
-		context := cli.NewContext(nil, flagSet, nil)
-
-		// When
-		res, err := modiff.Run(context)
-
-		// Then
-		Expect(err).NotTo(BeNil())
-		Expect(res).To(BeEmpty())
-	})
-
 	It("should fail if 'from' equals 'to'", func() {
 		// Given
 		flagSet.String(modiff.RepositoryArg, repo, "")

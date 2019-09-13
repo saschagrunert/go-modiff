@@ -69,6 +69,7 @@ test: $(GINKGO)
 		--covermode atomic \
 		--outputdir $(COVERAGE_PATH) \
 		--coverprofile coverprofile \
+		--slowSpecThreshold 60 \
 		--succinct
 	# fixes https://github.com/onsi/ginkgo/issues/518
 	sed -i '2,$${/mode: atomic/d;}' $(COVERAGE_PATH)/coverprofile

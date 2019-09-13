@@ -22,11 +22,13 @@ func main() {
 	app.Usage = "Command line tool for diffing go module " +
 		"dependency changes between versions"
 	app.UsageText = app.Usage
+	app.UseShortOptionHandling = true
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:      modiff.RepositoryArg + ", r",
 			Usage:     "repository to be used, like: github.com/owner/repo",
 			TakesFile: false,
+			Required:  true,
 		},
 		cli.StringFlag{
 			Name:      modiff.FromArg + ", f",

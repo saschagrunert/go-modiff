@@ -36,9 +36,6 @@ func Run(c *cli.Context) (string, error) {
 		return logErr("cli context is nil")
 	}
 	// Validate the flags
-	if c.String(RepositoryArg) == "" {
-		return logErr("argument %q is required", RepositoryArg)
-	}
 	repository := c.String(RepositoryArg)
 	from := c.String(FromArg)
 	to := c.String(ToArg)
@@ -49,20 +46,20 @@ func Run(c *cli.Context) (string, error) {
 	// Prepare the environment
 	dir, err := ioutil.TempDir("", "go-modiff")
 	if err != nil {
-		return logErr(err.Error())
+		return logErr(err)
 	}
 	defer os.RemoveAll(dir)
 
 	logrus.Infof("Setting up repository %s", repository)
 
 	if _, err := execCmd(dir, "git init"); err != nil {
-		return logErr(err.Error())
+		return logErr(err)
 	}
 
 	if _, err := execCmd(
 		dir, "git remote add origin %s", toURL(c.String(RepositoryArg)),
 	); err != nil {
-		return logErr(err.Error())
+		return logErr(err)
 	}
 
 	// Retrieve and diff the modules
@@ -85,8 +82,8 @@ func sanitizeTag(tag string) string {
 	return strings.TrimSuffix(tag, "+incompatible")
 }
 
-func logErr(format string, a ...interface{}) (string, error) {
-	err := fmt.Errorf(format, a...)
+func logErr(msg interface{}) (string, error) {
+	err := fmt.Errorf("%v", msg)
 	logrus.Error(err)
 	return "", err
 }

@@ -2,8 +2,8 @@
 github.com/BurntSushi/toml
 # github.com/OpenPeeDeeP/depguard v1.0.0
 github.com/OpenPeeDeeP/depguard
-# github.com/cpuguy83/go-md2man v1.0.10
-github.com/cpuguy83/go-md2man/md2man
+# github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d
+github.com/cpuguy83/go-md2man/v2/md2man
 # github.com/fatih/color v1.7.0
 github.com/fatih/color
 # github.com/fsnotify/fsnotify v1.4.7
@@ -212,10 +212,12 @@ github.com/onsi/gomega/matchers/support/goraph/util
 github.com/pelletier/go-toml
 # github.com/pkg/errors v0.8.1
 github.com/pkg/errors
-# github.com/russross/blackfriday v1.5.2
-github.com/russross/blackfriday
+# github.com/russross/blackfriday/v2 v2.0.1
+github.com/russross/blackfriday/v2
 # github.com/saschagrunert/ccli v1.0.2-0.20190805130407-05e6f251faf6
 github.com/saschagrunert/ccli
+# github.com/shurcooL/sanitized_anchor_name v1.0.0
+github.com/shurcooL/sanitized_anchor_name
 # github.com/sirupsen/logrus v1.4.2
 github.com/sirupsen/logrus
 # github.com/sourcegraph/go-diff v0.5.1
@@ -237,7 +239,7 @@ github.com/spf13/viper
 github.com/timakin/bodyclose/passes/bodyclose
 # github.com/ultraware/funlen v0.0.1
 github.com/ultraware/funlen
-# github.com/urfave/cli v1.22.0
+# github.com/urfave/cli v1.22.1
 github.com/urfave/cli
 # golang.org/x/net v0.0.0-20190620200207-3b0461eec859
 golang.org/x/net/html/charset

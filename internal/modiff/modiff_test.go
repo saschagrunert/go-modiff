@@ -41,8 +41,8 @@ _Nothing has changed._
 `
 	const (
 		repo = "github.com/saschagrunert/go-modiff"
-		from = "v0.8.0"
-		to   = "v0.9.0"
+		from = "v0.1.0"
+		to   = "v0.2.0"
 	)
 	var flagSet *flag.FlagSet
 

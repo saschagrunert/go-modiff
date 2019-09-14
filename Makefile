@@ -79,7 +79,7 @@ test: $(GINKGO)
 
 .PHONY: vendor
 vendor:
-	export GO111MODULE=on \
+	export GO111MODULE=on GOPROXY=https://proxy.golang.org GOSUMDB=https://sum.golang.org \
 		$(GO) mod tidy && \
 		$(GO) mod vendor && \
 		$(GO) mod verify

@@ -243,7 +243,7 @@ func execCmd(workDir, format string, args ...interface{}) (string, error) {
 	)
 	command := fmt.Sprintf(format, args...)
 	c := strings.Split(command, " ")
-	cmd = exec.Command(c[0], c[1:]...)
+	cmd = exec.Command(c[0], c[1:]...) // nolint: gosec
 	cmd.Dir = workDir
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr

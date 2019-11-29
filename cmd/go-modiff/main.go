@@ -6,7 +6,7 @@ import (
 
 	"github.com/saschagrunert/ccli"
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
 	"github.com/saschagrunert/go-modiff/internal/modiff"
 )
@@ -17,51 +17,52 @@ func main() {
 	app := ccli.NewApp()
 	app.Name = "go-modiff"
 	app.Version = "0.9.0"
-	app.Author = "Sascha Grunert"
-	app.Email = "mail@saschagrunert.de"
+	app.Authors = []*cli.Author{
+		{Name: "Sascha Grunert", Email: "mail@saschagrunert.de"},
+	}
 	app.Usage = "Command line tool for diffing go module " +
 		"dependency changes between versions"
 	app.UsageText = app.Usage
 	app.UseShortOptionHandling = true
 	app.Flags = []cli.Flag{
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:      modiff.RepositoryArg + ", r",
 			Usage:     "repository to be used, like: github.com/owner/repo",
 			TakesFile: false,
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:      modiff.FromArg + ", f",
 			Value:     "master",
 			Usage:     "the start of the comparison, any valid git rev",
 			TakesFile: false,
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:      modiff.ToArg + ", t",
 			Value:     "master",
 			Usage:     "the end of the comparison, any valid git rev",
 			TakesFile: false,
 		},
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  modiff.LinkArg + ", l",
 			Usage: "add diff links to the markdown output",
 		},
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  debugFlag + ", d",
 			Usage: "enable debug output",
 		},
 	}
-	app.Commands = []cli.Command{{
+	app.Commands = []*cli.Command{{
 		Name:    "docs",
 		Aliases: []string{"d"},
 		Action:  docs,
 		Usage: "generate the markdown or man page documentation " +
 			"and print it to stdout",
 		Flags: []cli.Flag{
-			cli.BoolFlag{
+			&cli.BoolFlag{
 				Name:  "markdown",
 				Usage: "print the markdown version",
 			},
-			cli.BoolFlag{
+			&cli.BoolFlag{
 				Name:  "man",
 				Usage: "print the man version",
 			},

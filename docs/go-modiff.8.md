@@ -11,12 +11,12 @@ go-modiff - Command line tool for diffing go module dependency changes between v
 go-modiff
 
 ```
-[--debug|-d]
-[--from|-f]=[value]
+[--debug]
+[--from]=[value]
 [--help|-h]
-[--link|-l]
-[--repository|-r]=[value]
-[--to|-t]=[value]
+[--link]
+[--repository]=[value]
+[--to]=[value]
 [--version|-v]
 ```
 
@@ -32,17 +32,17 @@ go-modiff [GLOBAL OPTIONS] command [COMMAND OPTIONS] [ARGUMENTS...]
 
 # GLOBAL OPTIONS
 
-**--debug, -d**: enable debug output
+**--debug**: enable debug output
 
-**--from, -f**="": the start of the comparison, any valid git rev (default: master)
+**--from**="": the start of the comparison, any valid git rev (default: master)
 
 **--help, -h**: show help
 
-**--link, -l**: add diff links to the markdown output
+**--link**: add diff links to the markdown output
 
-**--repository, -r**="": repository to be used, like: github.com/owner/repo
+**--repository**="": repository to be used, like: github.com/owner/repo
 
-**--to, -t**="": the end of the comparison, any valid git rev (default: master)
+**--to**="": the end of the comparison, any valid git rev (default: master)
 
 **--version, -v**: print the version
 
@@ -52,6 +52,8 @@ go-modiff [GLOBAL OPTIONS] command [COMMAND OPTIONS] [ARGUMENTS...]
 ## docs, d
 
 generate the markdown or man page documentation and print it to stdout
+
+**--help, -h**: show help
 
 **--man**: print the man version
 

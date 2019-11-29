@@ -16,12 +16,12 @@ go\-modiff
 .RS
 
 .nf
-[\-\-debug|\-d]
-[\-\-from|\-f]=[value]
+[\-\-debug]
+[\-\-from]=[value]
 [\-\-help|\-h]
-[\-\-link|\-l]
-[\-\-repository|\-r]=[value]
-[\-\-to|\-t]=[value]
+[\-\-link]
+[\-\-repository]=[value]
+[\-\-to]=[value]
 [\-\-version|\-v]
 
 .fi
@@ -47,22 +47,22 @@ go\-modiff [GLOBAL OPTIONS] command [COMMAND OPTIONS] [ARGUMENTS...]
 
 .SH GLOBAL OPTIONS
 .PP
-\fB\-\-debug, \-d\fP: enable debug output
+\fB\-\-debug\fP: enable debug output
 
 .PP
-\fB\-\-from, \-f\fP="": the start of the comparison, any valid git rev (default: master)
+\fB\-\-from\fP="": the start of the comparison, any valid git rev (default: master)
 
 .PP
 \fB\-\-help, \-h\fP: show help
 
 .PP
-\fB\-\-link, \-l\fP: add diff links to the markdown output
+\fB\-\-link\fP: add diff links to the markdown output
 
 .PP
-\fB\-\-repository, \-r\fP="": repository to be used, like: github.com/owner/repo
+\fB\-\-repository\fP="": repository to be used, like: github.com/owner/repo
 
 .PP
-\fB\-\-to, \-t\fP="": the end of the comparison, any valid git rev (default: master)
+\fB\-\-to\fP="": the end of the comparison, any valid git rev (default: master)
 
 .PP
 \fB\-\-version, \-v\fP: print the version
@@ -72,6 +72,9 @@ go\-modiff [GLOBAL OPTIONS] command [COMMAND OPTIONS] [ARGUMENTS...]
 .SH docs, d
 .PP
 generate the markdown or man page documentation and print it to stdout
+
+.PP
+\fB\-\-help, \-h\fP: show help
 
 .PP
 \fB\-\-man\fP: print the man version

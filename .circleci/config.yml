@@ -9,7 +9,7 @@ stdenv: &stdenv
 executors:
   container:
     docker:
-      - image: circleci/golang:1.12
+      - image: circleci/golang:1.13
         user: circleci
     <<: *stdenv
     working_directory: *workdir

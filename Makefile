@@ -47,8 +47,12 @@ $(GO_MODIFF):
 $(GO_MODIFF_STATIC):
 	$(call go-build,./cmd/go-modiff,-linkmode external -extldflags "-static -lm")
 
-$(GOLANGCI_LINT):
-	$(call go-build,./vendor/github.com/golangci/golangci-lint/cmd/golangci-lint)
+${GOLANGCI_LINT}:
+	export \
+		VERSION=v1.21.0 \
+		URL=https://raw.githubusercontent.com/golangci/golangci-lint \
+		BINDIR=${BUILD_BIN_PATH} && \
+	curl -sfL $$URL/$$VERSION/install.sh | sh -s $$VERSION
 
 $(GINKGO):
 	$(call go-build,./vendor/github.com/onsi/ginkgo/ginkgo)

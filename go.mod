@@ -1,9 +1,8 @@
 module github.com/saschagrunert/go-modiff
 
-go 1.12
+go 1.13
 
 require (
-	github.com/golangci/golangci-lint v1.21.0
 	github.com/onsi/ginkgo v1.10.3
 	github.com/onsi/gomega v1.7.1
 	github.com/saschagrunert/ccli v1.0.2-0.20191122180747-8bdd3fdeb24d

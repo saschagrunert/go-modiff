@@ -16,7 +16,7 @@ func main() {
 
 	app := ccli.NewApp()
 	app.Name = "go-modiff"
-	app.Version = "0.11.0"
+	app.Version = "0.12.0"
 	app.Authors = []*cli.Author{
 		{Name: "Sascha Grunert", Email: "mail@saschagrunert.de"},
 	}
@@ -26,29 +26,34 @@ func main() {
 	app.UseShortOptionHandling = true
 	app.Flags = []cli.Flag{
 		&cli.StringFlag{
-			Name:      modiff.RepositoryArg + ", r",
+			Name:      modiff.RepositoryArg,
+			Aliases:   []string{"r"},
 			Usage:     "repository to be used, like: github.com/owner/repo",
 			TakesFile: false,
 		},
 		&cli.StringFlag{
-			Name:      modiff.FromArg + ", f",
+			Name:      modiff.FromArg,
+			Aliases:   []string{"f"},
 			Value:     "master",
 			Usage:     "the start of the comparison, any valid git rev",
 			TakesFile: false,
 		},
 		&cli.StringFlag{
-			Name:      modiff.ToArg + ", t",
+			Name:      modiff.ToArg,
+			Aliases:   []string{"t"},
 			Value:     "master",
 			Usage:     "the end of the comparison, any valid git rev",
 			TakesFile: false,
 		},
 		&cli.BoolFlag{
-			Name:  modiff.LinkArg + ", l",
-			Usage: "add diff links to the markdown output",
+			Name:    modiff.LinkArg,
+			Aliases: []string{"l"},
+			Usage:   "add diff links to the markdown output",
 		},
 		&cli.BoolFlag{
-			Name:  debugFlag + ", d",
-			Usage: "enable debug output",
+			Name:    debugFlag,
+			Aliases: []string{"d"},
+			Usage:   "enable debug output",
 		},
 	}
 	app.Commands = []*cli.Command{{

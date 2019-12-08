@@ -12,39 +12,40 @@ import (
 
 // The actual test suite
 var _ = t.Describe("Run", func() {
-	/*
-			const expected = `# Dependencies
+	const expected = `# Dependencies
 
-		## Added
-		- github.com/saschagrunert/ccli: e981d95
+## Added
+_Nothing has changed._
 
-		## Changed
-		- github.com/fatih/color: v1.6.0 → v1.7.0
-		- github.com/mattn/go-colorable: v0.0.9 → v0.1.2
-		- github.com/mattn/go-isatty: v0.0.3 → v0.0.8
+## Changed
+- github.com/bombsimon/wsl: v1.2.5 → v1.2.1
+- github.com/golangci/golangci-lint: v1.21.0 → v1.20.0
+- github.com/golangci/lint-1: 297bf36 → fad67e0
+- golang.org/x/tools: 0337d82 → 7c411de
 
-		## Removed
-		_Nothing has changed._
-		`
+## Removed
+- github.com/gofrs/flock: 5135e61
+`
 
-			const expectedWithLinks = `# Dependencies
+	const expectedWithLinks = `# Dependencies
 
-		## Added
-		- github.com/saschagrunert/ccli: [e981d95](https://github.com/saschagrunert/ccli/tree/e981d95)
+## Added
+_Nothing has changed._
 
-		## Changed
-		- github.com/fatih/color: [v1.6.0 → v1.7.0](https://github.com/fatih/color/compare/v1.6.0...v1.7.0)
-		- github.com/mattn/go-colorable: [v0.0.9 → v0.1.2](https://github.com/mattn/go-colorable/compare/v0.0.9...v0.1.2)
-		- github.com/mattn/go-isatty: [v0.0.3 → v0.0.8](https://github.com/mattn/go-isatty/compare/v0.0.3...v0.0.8)
+## Changed
+- github.com/bombsimon/wsl: [v1.2.5 → v1.2.1](https://github.com/bombsimon/wsl/compare/v1.2.5...v1.2.1)
+- github.com/golangci/golangci-lint: [v1.21.0 → v1.20.0](https://github.com/golangci/golangci-lint/compare/v1.21.0...v1.20.0)
+- github.com/golangci/lint-1: [297bf36 → fad67e0](https://github.com/golangci/lint-1/compare/297bf36...fad67e0)
+- golang.org/x/tools: 0337d82 → 7c411de
 
-		## Removed
-		_Nothing has changed._
-		`
-	*/
+## Removed
+- github.com/gofrs/flock: [5135e61](https://github.com/gofrs/flock/tree/5135e61)
+`
+
 	const (
 		repo = "github.com/saschagrunert/go-modiff"
-		from = "v0.1.0"
-		// to   = "v0.2.0"
+		from = "v0.10.0"
+		to   = "v0.11.0"
 	)
 	var flagSet *flag.FlagSet
 
@@ -53,38 +54,36 @@ var _ = t.Describe("Run", func() {
 		flagSet = flag.NewFlagSet("test", 0)
 	})
 
-	/*
-		It("should succeed", func() {
-			// Given
-			flagSet.String(modiff.RepositoryArg, repo, "")
-			flagSet.String(modiff.FromArg, from, "")
-			flagSet.String(modiff.ToArg, to, "")
-			context := cli.NewContext(nil, flagSet, nil)
+	It("should succeed", func() {
+		// Given
+		flagSet.String(modiff.RepositoryArg, repo, "")
+		flagSet.String(modiff.FromArg, from, "")
+		flagSet.String(modiff.ToArg, to, "")
+		context := cli.NewContext(nil, flagSet, nil)
 
-			// When
-			res, err := modiff.Run(context)
+		// When
+		res, err := modiff.Run(context)
 
-			// Then
-			Expect(err).To(BeNil())
-			Expect(res).To(Equal(expected))
-		})
+		// Then
+		Expect(err).To(BeNil())
+		Expect(res).To(Equal(expected))
+	})
 
-		It("should succeed with links", func() {
-			// Given
-			flagSet.String(modiff.RepositoryArg, repo, "")
-			flagSet.String(modiff.FromArg, from, "")
-			flagSet.String(modiff.ToArg, to, "")
-			flagSet.Bool(modiff.LinkArg, true, "")
-			context := cli.NewContext(nil, flagSet, nil)
+	It("should succeed with links", func() {
+		// Given
+		flagSet.String(modiff.RepositoryArg, repo, "")
+		flagSet.String(modiff.FromArg, from, "")
+		flagSet.String(modiff.ToArg, to, "")
+		flagSet.Bool(modiff.LinkArg, true, "")
+		context := cli.NewContext(nil, flagSet, nil)
 
-			// When
-			res, err := modiff.Run(context)
+		// When
+		res, err := modiff.Run(context)
 
-			// Then
-			Expect(err).To(BeNil())
-			Expect(res).To(Equal(expectedWithLinks))
-		})
-	*/
+		// Then
+		Expect(err).To(BeNil())
+		Expect(res).To(Equal(expectedWithLinks))
+	})
 
 	It("should fail if context is nil", func() {
 		// Given

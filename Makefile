@@ -68,6 +68,7 @@ test: $(GINKGO)
 	$(BUILD_PATH)/ginkgo $(TESTFLAGS) \
 		-r -p \
 		--cover \
+		--mod vendor \
 		--randomizeAllSpecs \
 		--randomizeSuites \
 		--covermode atomic \
@@ -75,8 +76,6 @@ test: $(GINKGO)
 		--coverprofile coverprofile \
 		--slowSpecThreshold 60 \
 		--succinct
-	# fixes https://github.com/onsi/ginkgo/issues/518
-	sed -i '2,$${/mode: atomic/d;}' $(COVERAGE_PATH)/coverprofile
 	$(GO) tool cover -html=$(COVERAGE_PATH)/coverprofile -o $(COVERAGE_PATH)/coverage.html
 	$(GO) tool cover -func=$(COVERAGE_PATH)/coverprofile | sed -n 's/\(total:\).*\([0-9][0-9].[0-9]\)/\1 \2/p'
 	find . -name '*_junit.xml' -exec mv -t $(JUNIT_PATH) {} +

@@ -16,12 +16,12 @@ go\-modiff
 .RS
 
 .nf
-[\-\-debug]
-[\-\-from]=[value]
+[\-\-debug|\-d]
+[\-\-from|\-f]=[value]
 [\-\-help|\-h]
-[\-\-link]
-[\-\-repository]=[value]
-[\-\-to]=[value]
+[\-\-link|\-l]
+[\-\-repository|\-r]=[value]
+[\-\-to|\-t]=[value]
 [\-\-version|\-v]
 
 .fi
@@ -47,22 +47,22 @@ go\-modiff [GLOBAL OPTIONS] command [COMMAND OPTIONS] [ARGUMENTS...]
 
 .SH GLOBAL OPTIONS
 .PP
-\fB\-\-debug\fP: enable debug output
+\fB\-\-debug, \-d\fP: enable debug output
 
 .PP
-\fB\-\-from\fP="": the start of the comparison, any valid git rev (default: master)
+\fB\-\-from, \-f\fP="": the start of the comparison, any valid git rev (default: master)
 
 .PP
 \fB\-\-help, \-h\fP: show help
 
 .PP
-\fB\-\-link\fP: add diff links to the markdown output
+\fB\-\-link, \-l\fP: add diff links to the markdown output
 
 .PP
-\fB\-\-repository\fP="": repository to be used, like: github.com/owner/repo
+\fB\-\-repository, \-r\fP="": repository to be used, like: github.com/owner/repo
 
 .PP
-\fB\-\-to\fP="": the end of the comparison, any valid git rev (default: master)
+\fB\-\-to, \-t\fP="": the end of the comparison, any valid git rev (default: master)
 
 .PP
 \fB\-\-version, \-v\fP: print the version

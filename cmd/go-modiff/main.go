@@ -11,6 +11,13 @@ import (
 	"github.com/saschagrunert/go-modiff/internal/modiff"
 )
 
+const (
+	repositoryArg = "repository"
+	fromArg       = "from"
+	toArg         = "to"
+	linkArg       = "link"
+)
+
 func main() {
 	const debugFlag = "debug"
 
@@ -26,27 +33,27 @@ func main() {
 	app.UseShortOptionHandling = true
 	app.Flags = []cli.Flag{
 		&cli.StringFlag{
-			Name:      modiff.RepositoryArg,
+			Name:      repositoryArg,
 			Aliases:   []string{"r"},
 			Usage:     "repository to be used, like: github.com/owner/repo",
 			TakesFile: false,
 		},
 		&cli.StringFlag{
-			Name:      modiff.FromArg,
+			Name:      fromArg,
 			Aliases:   []string{"f"},
 			Value:     "master",
 			Usage:     "the start of the comparison, any valid git rev",
 			TakesFile: false,
 		},
 		&cli.StringFlag{
-			Name:      modiff.ToArg,
+			Name:      toArg,
 			Aliases:   []string{"t"},
 			Value:     "master",
 			Usage:     "the end of the comparison, any valid git rev",
 			TakesFile: false,
 		},
 		&cli.BoolFlag{
-			Name:    modiff.LinkArg,
+			Name:    linkArg,
 			Aliases: []string{"l"},
 			Usage:   "add diff links to the markdown output",
 		},
@@ -89,7 +96,13 @@ func main() {
 		}
 
 		// Run modiff
-		res, err := modiff.Run(c)
+		config := modiff.NewConfig(
+			c.String(repositoryArg),
+			c.String(fromArg),
+			c.String(toArg),
+			c.Bool(linkArg),
+		)
+		res, err := modiff.Run(config)
 		if err != nil {
 			return err
 		}

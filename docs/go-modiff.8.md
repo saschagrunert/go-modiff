@@ -1,6 +1,4 @@
-% go-modiff(8) 
-
-% Sascha Grunert
+% go-modiff 8
 
 # NAME
 

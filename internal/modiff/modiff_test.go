@@ -27,6 +27,7 @@ _Nothing has changed._
 - github.com/gofrs/flock: 5135e61
 `
 
+	// nolint: lll
 	const expectedWithLinks = `# Dependencies
 
 ## Added

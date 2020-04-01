@@ -1,13 +1,10 @@
 package modiff_test
 
 import (
-	"flag"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/saschagrunert/go-modiff/internal/modiff"
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli/v2"
 )
 
 // The actual test suite
@@ -48,22 +45,17 @@ _Nothing has changed._
 		from = "v0.10.0"
 		to   = "v0.11.0"
 	)
-	var flagSet *flag.FlagSet
 
 	BeforeEach(func() {
 		logrus.SetLevel(logrus.PanicLevel)
-		flagSet = flag.NewFlagSet("test", 0)
 	})
 
 	It("should succeed", func() {
 		// Given
-		flagSet.String(modiff.RepositoryArg, repo, "")
-		flagSet.String(modiff.FromArg, from, "")
-		flagSet.String(modiff.ToArg, to, "")
-		context := cli.NewContext(nil, flagSet, nil)
+		config := modiff.NewConfig(repo, from, to, false)
 
 		// When
-		res, err := modiff.Run(context)
+		res, err := modiff.Run(config)
 
 		// Then
 		Expect(err).To(BeNil())
@@ -72,14 +64,10 @@ _Nothing has changed._
 
 	It("should succeed with links", func() {
 		// Given
-		flagSet.String(modiff.RepositoryArg, repo, "")
-		flagSet.String(modiff.FromArg, from, "")
-		flagSet.String(modiff.ToArg, to, "")
-		flagSet.Bool(modiff.LinkArg, true, "")
-		context := cli.NewContext(nil, flagSet, nil)
+		config := modiff.NewConfig(repo, from, to, true)
 
 		// When
-		res, err := modiff.Run(context)
+		res, err := modiff.Run(config)
 
 		// Then
 		Expect(err).To(BeNil())
@@ -98,10 +86,10 @@ _Nothing has changed._
 
 	It("should fail if 'repository' not given", func() {
 		// Given
-		context := cli.NewContext(nil, flagSet, nil)
+		config := modiff.NewConfig("", from, to, true)
 
 		// When
-		res, err := modiff.Run(context)
+		res, err := modiff.Run(config)
 
 		// Then
 		Expect(err).NotTo(BeNil())
@@ -110,11 +98,10 @@ _Nothing has changed._
 
 	It("should fail if 'from' equals 'to'", func() {
 		// Given
-		flagSet.String(modiff.RepositoryArg, repo, "")
-		context := cli.NewContext(nil, flagSet, nil)
+		config := modiff.NewConfig(repo, "", "", true)
 
 		// When
-		res, err := modiff.Run(context)
+		res, err := modiff.Run(config)
 
 		// Then
 		Expect(err).NotTo(BeNil())
@@ -123,12 +110,10 @@ _Nothing has changed._
 
 	It("should fail if repository is not clone-able", func() {
 		// Given
-		flagSet.String(modiff.RepositoryArg, "invalid", "")
-		flagSet.String(modiff.FromArg, from, "")
-		context := cli.NewContext(nil, flagSet, nil)
+		config := modiff.NewConfig("invalid", from, "", true)
 
 		// When
-		res, err := modiff.Run(context)
+		res, err := modiff.Run(config)
 
 		// Then
 		Expect(err).NotTo(BeNil())

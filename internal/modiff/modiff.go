@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli/v2"
 	"k8s.io/release/pkg/command"
 )
 
@@ -20,58 +19,62 @@ type versions struct {
 
 type modules = map[string]versions
 
-const (
-	RepositoryArg = "repository"
-	FromArg       = "from"
-	ToArg         = "to"
-	LinkArg       = "link"
-)
+// Config is the structure passed to `Run`
+type Config struct {
+	repository string
+	from       string
+	to         string
+	link       bool
+}
 
-func Run(c *cli.Context) (string, error) {
+// NewConfig creates a new configuration
+func NewConfig(repository, from, to string, link bool) *Config {
+	return &Config{repository, from, to, link}
+}
+
+// Run starts go modiff and returns the markdown string
+func Run(config *Config) (string, error) {
 	// Enable to modules
 	os.Setenv("GO111MODULE", "on")
 
-	if c == nil {
+	if config == nil {
 		return logErr("cli context is nil")
 	}
 	// Validate the flags
-	if c.String(RepositoryArg) == "" {
-		return logErr("argument %q is required", RepositoryArg)
+	if config.repository == "" {
+		return logErr("repository is required")
 	}
-	repository := c.String(RepositoryArg)
-	from := c.String(FromArg)
-	to := c.String(ToArg)
-	if from == to {
-		return logErr("no diff possible if `--from` equals `--to`")
+	if config.from == config.to {
+		return logErr("no diff possible if `from` equals `to`")
 	}
 
 	// Prepare the environment
 	dir, err := ioutil.TempDir("", "go-modiff")
 	if err != nil {
-		return logErr(err.Error())
+		return logErr(err)
 	}
 	defer os.RemoveAll(dir)
 
-	logrus.Infof("Setting up repository %s", repository)
+	logrus.Infof("Setting up repository %s", config.repository)
 
 	if err := command.NewWithWorkDir(
 		dir, "git", "init",
 	).RunSilentSuccess(); err != nil {
-		return logErr(err.Error())
+		return logErr(err)
 	}
 
 	if err := command.NewWithWorkDir(
-		dir, "git", "remote", "add", "origin", toURL(c.String(RepositoryArg)),
+		dir, "git", "remote", "add", "origin", toURL(config.repository),
 	).RunSilentSuccess(); err != nil {
-		return logErr(err.Error())
+		return logErr(err)
 	}
 
 	// Retrieve and diff the modules
-	mods, err := getModules(dir, from, to)
+	mods, err := getModules(dir, config.from, config.to)
 	if err != nil {
 		return "", err
 	}
-	return diffModules(mods, c.Bool(LinkArg)), nil
+	return diffModules(mods, config.link), nil
 }
 
 func toURL(name string) string {
@@ -86,8 +89,8 @@ func sanitizeTag(tag string) string {
 	return strings.TrimSuffix(tag, "+incompatible")
 }
 
-func logErr(format string, a ...interface{}) (string, error) {
-	err := fmt.Errorf(format, a...)
+func logErr(msg interface{}) (string, error) {
+	err := fmt.Errorf("%v", msg)
 	logrus.Error(err)
 	return "", err
 }

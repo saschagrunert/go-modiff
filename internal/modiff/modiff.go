@@ -2,16 +2,15 @@ package modiff
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"sort"
 	"strings"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
+	"k8s.io/release/pkg/command"
 )
 
 type versions struct {
@@ -55,13 +54,15 @@ func Run(c *cli.Context) (string, error) {
 
 	logrus.Infof("Setting up repository %s", repository)
 
-	if _, err := execCmd(dir, "git init"); err != nil {
+	if err := command.NewWithWorkDir(
+		dir, "git", "init",
+	).RunSilentSuccess(); err != nil {
 		return logErr(err.Error())
 	}
 
-	if _, err := execCmd(
-		dir, "git remote add origin %s", toURL(c.String(RepositoryArg)),
-	); err != nil {
+	if err := command.NewWithWorkDir(
+		dir, "git", "remote", "add", "origin", toURL(c.String(RepositoryArg)),
+	).RunSilentSuccess(); err != nil {
 		return logErr(err.Error())
 	}
 
@@ -216,52 +217,26 @@ func getModules(workDir, from, to string) (modules, error) {
 
 func retrieveModules(rev, workDir string) (string, error) {
 	logrus.Infof("Retrieving modules of %s", rev)
-	_, err := execCmd(workDir, "git fetch --depth=1 origin %s", rev)
-	if err != nil {
+	if err := command.NewWithWorkDir(
+		workDir, "git", "fetch", "--depth=1", "origin", rev,
+	).RunSilentSuccess(); err != nil {
 		logrus.Error(err)
 		return "", err
 	}
 
-	_, err = execCmd(workDir, "git checkout -f FETCH_HEAD")
-	if err != nil {
+	if err := command.NewWithWorkDir(
+		workDir, "git", "checkout", "-f", "FETCH_HEAD",
+	).RunSilentSuccess(); err != nil {
 		logrus.Error(err)
 		return "", err
 	}
 
-	mods, err := execCmd(workDir, "go list -m all")
+	mods, err := command.NewWithWorkDir(
+		workDir, "go", "list", "-mod=mod", "-m", "all",
+	).RunSilentSuccessOutput()
 	if err != nil {
 		logrus.Error(err)
 		return "", err
 	}
-	return mods, nil
-}
-
-func execCmd(workDir, format string, args ...interface{}) (string, error) {
-	var (
-		cmd            *exec.Cmd
-		stdout, stderr bytes.Buffer
-	)
-	command := fmt.Sprintf(format, args...)
-	c := strings.Split(command, " ")
-	cmd = exec.Command(c[0], c[1:]...) // nolint: gosec
-	cmd.Dir = workDir
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	err := cmd.Run()
-	if err != nil {
-		return "", fmt.Errorf(
-			"`%v` failed: %v %v (%v)",
-			command,
-			stderr.String(),
-			stdout.String(),
-			err,
-		)
-	}
-
-	output := stdout.String()
-	if output != "" {
-		logrus.Debug(output)
-	}
-	return output, nil
+	return mods.OutputTrimNL(), nil
 }

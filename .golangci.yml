@@ -8,16 +8,20 @@ linters:
     - bodyclose
     - deadcode
     - depguard
+    - dogsled
     - dupl
     - errcheck
     - gochecknoglobals
     - gochecknoinits
+    - gocognit
     - goconst
     - gocritic
     - gocyclo
+    - godox
     - gofmt
     - goimports
     - golint
+    - goprintffuncname
     - gosec
     - gosimple
     - govet
@@ -28,6 +32,7 @@ linters:
     - misspell
     - nakedret
     - prealloc
+    - rowserrcheck
     - scopelint
     - staticcheck
     - structcheck
@@ -37,11 +42,16 @@ linters:
     - unparam
     - unused
     - varcheck
+    - whitespace
     # - funlen
+    # - gomnd
+    # - wsl
 linters-settings:
   errcheck:
     check-type-assertions: true
     check-blank: true
+  gocognit:
+    min-complexity: 35
   gocritic:
     enabled-checks:
       # Diagnostic

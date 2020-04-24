@@ -3,7 +3,7 @@ package modiff_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/saschagrunert/go-modiff/internal/modiff"
+	"github.com/saschagrunert/go-modiff/pkg/modiff"
 	"github.com/sirupsen/logrus"
 )
 

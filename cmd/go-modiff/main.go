@@ -8,7 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 
-	"github.com/saschagrunert/go-modiff/internal/modiff"
+	"github.com/saschagrunert/go-modiff/pkg/modiff"
 )
 
 const (

@@ -23,7 +23,7 @@ func main() {
 
 	app := ccli.NewApp()
 	app.Name = "go-modiff"
-	app.Version = "1.0.1"
+	app.Version = "1.0.2"
 	app.Authors = []*cli.Author{
 		{Name: "Sascha Grunert", Email: "mail@saschagrunert.de"},
 	}

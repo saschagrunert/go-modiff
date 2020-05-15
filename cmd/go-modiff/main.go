@@ -12,10 +12,11 @@ import (
 )
 
 const (
-	repositoryArg = "repository"
-	fromArg       = "from"
-	toArg         = "to"
-	linkArg       = "link"
+	repositoryArg  = "repository"
+	fromArg        = "from"
+	toArg          = "to"
+	linkArg        = "link"
+	headerLevelArg = "header-level"
 )
 
 func main() {
@@ -23,7 +24,7 @@ func main() {
 
 	app := ccli.NewApp()
 	app.Name = "go-modiff"
-	app.Version = "1.0.3"
+	app.Version = "1.1.0"
 	app.Authors = []*cli.Author{
 		{Name: "Sascha Grunert", Email: "mail@saschagrunert.de"},
 	}
@@ -56,6 +57,12 @@ func main() {
 			Name:    linkArg,
 			Aliases: []string{"l"},
 			Usage:   "add diff links to the markdown output",
+		},
+		&cli.UintFlag{
+			Name:    headerLevelArg,
+			Aliases: []string{"i"},
+			Value:   1,
+			Usage:   "add a higher markdown header level depth",
 		},
 		&cli.BoolFlag{
 			Name:    debugFlag,
@@ -101,6 +108,7 @@ func main() {
 			c.String(fromArg),
 			c.String(toArg),
 			c.Bool(linkArg),
+			c.Uint(headerLevelArg),
 		)
 		res, err := modiff.Run(config)
 		if err != nil {

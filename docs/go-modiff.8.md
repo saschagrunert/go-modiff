@@ -11,6 +11,7 @@ go-modiff
 ```
 [--debug|-d]
 [--from|-f]=[value]
+[--header-level|-i]=[value]
 [--help|-h]
 [--link|-l]
 [--repository|-r]=[value]
@@ -33,6 +34,8 @@ go-modiff [GLOBAL OPTIONS] command [COMMAND OPTIONS] [ARGUMENTS...]
 **--debug, -d**: enable debug output
 
 **--from, -f**="": the start of the comparison, any valid git rev (default: master)
+
+**--header-level, -i**="": add a higher markdown header level depth (default: 1)
 
 **--help, -h**: show help
 

@@ -21,15 +21,16 @@ type modules = map[string]versions
 
 // Config is the structure passed to `Run`
 type Config struct {
-	repository string
-	from       string
-	to         string
-	link       bool
+	repository  string
+	from        string
+	to          string
+	link        bool
+	headerLevel uint
 }
 
 // NewConfig creates a new configuration
-func NewConfig(repository, from, to string, link bool) *Config {
-	return &Config{repository, from, to, link}
+func NewConfig(repository, from, to string, link bool, headerLevel uint) *Config {
+	return &Config{repository, from, to, link, headerLevel}
 }
 
 // Run starts go modiff and returns the markdown string
@@ -74,7 +75,7 @@ func Run(config *Config) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return diffModules(mods, config.link), nil
+	return diffModules(mods, config.link, config.headerLevel), nil
 }
 
 func toURL(name string) string {
@@ -95,7 +96,7 @@ func logErr(msg interface{}) (string, error) {
 	return "", err
 }
 
-func diffModules(mods modules, addLinks bool) string {
+func diffModules(mods modules, addLinks bool, headerLevel uint) string {
 	var added, removed, changed []string
 	for name, mod := range mods {
 		txt := fmt.Sprintf("- %s: ", name)
@@ -135,9 +136,13 @@ func diffModules(mods modules, addLinks bool) string {
 
 	// Pretty print
 	builder := &strings.Builder{}
-	builder.WriteString("# Dependencies\n")
+	builder.WriteString(fmt.Sprintf(
+		"%s Dependencies\n", strings.Repeat("#", int(headerLevel)),
+	))
 	forEach := func(section string, input []string) {
-		builder.WriteString(fmt.Sprintf("\n## %s\n", section))
+		builder.WriteString(fmt.Sprintf("\n%s %s\n",
+			strings.Repeat("#", int(headerLevel)+1), section,
+		))
 		if len(input) > 0 {
 			for _, mod := range input {
 				builder.WriteString(fmt.Sprintf("%s\n", mod))

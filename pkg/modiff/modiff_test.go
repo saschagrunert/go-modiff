@@ -52,7 +52,7 @@ _Nothing has changed._
 
 	It("should succeed", func() {
 		// Given
-		config := modiff.NewConfig(repo, from, to, false)
+		config := modiff.NewConfig(repo, from, to, false, 1)
 
 		// When
 		res, err := modiff.Run(config)
@@ -64,7 +64,7 @@ _Nothing has changed._
 
 	It("should succeed with links", func() {
 		// Given
-		config := modiff.NewConfig(repo, from, to, true)
+		config := modiff.NewConfig(repo, from, to, true, 1)
 
 		// When
 		res, err := modiff.Run(config)
@@ -86,7 +86,7 @@ _Nothing has changed._
 
 	It("should fail if 'repository' not given", func() {
 		// Given
-		config := modiff.NewConfig("", from, to, true)
+		config := modiff.NewConfig("", from, to, true, 1)
 
 		// When
 		res, err := modiff.Run(config)
@@ -98,7 +98,7 @@ _Nothing has changed._
 
 	It("should fail if 'from' equals 'to'", func() {
 		// Given
-		config := modiff.NewConfig(repo, "", "", true)
+		config := modiff.NewConfig(repo, "", "", true, 1)
 
 		// When
 		res, err := modiff.Run(config)
@@ -110,7 +110,7 @@ _Nothing has changed._
 
 	It("should fail if repository is not clone-able", func() {
 		// Given
-		config := modiff.NewConfig("invalid", from, "", true)
+		config := modiff.NewConfig("invalid", from, "", true, 1)
 
 		// When
 		res, err := modiff.Run(config)

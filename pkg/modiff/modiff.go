@@ -240,7 +240,7 @@ func retrieveModules(rev, workDir string) (string, error) {
 	}
 
 	mods, err := command.NewWithWorkDir(
-		workDir, "go", "list", "-mod=mod", "-m", "all",
+		workDir, "go", "list", "-mod=readonly", "-m", "all",
 	).RunSilentSuccessOutput()
 	if err != nil {
 		logrus.Error(err)

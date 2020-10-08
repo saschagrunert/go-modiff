@@ -75,6 +75,7 @@ func Run(config *Config) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return diffModules(mods, config.link, config.headerLevel), nil
 }
 
@@ -93,6 +94,7 @@ func sanitizeTag(tag string) string {
 func logErr(msg interface{}) (string, error) {
 	err := fmt.Errorf("%v", msg)
 	logrus.Error(err)
+
 	return "", err
 }
 
@@ -154,6 +156,7 @@ func diffModules(mods modules, addLinks bool, headerLevel uint) string {
 	forEach("Added", added)
 	forEach("Changed", changed)
 	forEach("Removed", removed)
+
 	return builder.String()
 }
 
@@ -220,6 +223,7 @@ func getModules(workDir, from, to string) (modules, error) {
 	forEach(after, func(res *versions, v string) { res.after = v })
 
 	logrus.Infof("%d modules found", len(res))
+
 	return res, nil
 }
 
@@ -229,6 +233,7 @@ func retrieveModules(rev, workDir string) (string, error) {
 		workDir, "git", "fetch", "--depth=1", "origin", rev,
 	).RunSilentSuccess(); err != nil {
 		logrus.Error(err)
+
 		return "", err
 	}
 
@@ -236,6 +241,7 @@ func retrieveModules(rev, workDir string) (string, error) {
 		workDir, "git", "checkout", "-f", "FETCH_HEAD",
 	).RunSilentSuccess(); err != nil {
 		logrus.Error(err)
+
 		return "", err
 	}
 
@@ -244,7 +250,9 @@ func retrieveModules(rev, workDir string) (string, error) {
 	).RunSilentSuccessOutput()
 	if err != nil {
 		logrus.Error(err)
+
 		return "", err
 	}
+
 	return mods.OutputTrimNL(), nil
 }

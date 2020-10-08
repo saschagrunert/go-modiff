@@ -49,7 +49,7 @@ $(GO_MODIFF_STATIC):
 
 $(GOLANGCI_LINT):
 	export \
-		VERSION=v1.27.0 \
+		VERSION=v1.31.0 \
 		URL=https://raw.githubusercontent.com/golangci/golangci-lint \
 		BINDIR=$(BUILD_PATH) && \
 	curl -sfL $$URL/$$VERSION/install.sh | sh -s $$VERSION

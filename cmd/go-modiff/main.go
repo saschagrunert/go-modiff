@@ -5,10 +5,9 @@ import (
 	"os"
 
 	"github.com/saschagrunert/ccli"
+	"github.com/saschagrunert/go-modiff/pkg/modiff"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
-
-	"github.com/saschagrunert/go-modiff/pkg/modiff"
 )
 
 const (
@@ -116,6 +115,7 @@ func main() {
 		}
 		logrus.Info("Done, the result will be printed to `stdout`")
 		fmt.Print(res)
+
 		return nil
 	}
 	if err := app.Run(os.Args); err != nil {
@@ -134,6 +134,7 @@ func docs(c *cli.Context) (err error) {
 		return err
 	}
 	fmt.Printf("%v\n", res)
+
 	return nil
 }
 
@@ -143,5 +144,6 @@ func fish(c *cli.Context) (err error) {
 		return err
 	}
 	fmt.Printf("%v", res)
+
 	return nil
 }

@@ -55,6 +55,7 @@ func (t *TestFramework) Describe(text string, body func()) bool {
 
 // RunFrameworkSpecs is a convenience wrapper for running tests
 func RunFrameworkSpecs(t *testing.T, suiteName string) {
+	t.Helper()
 	ginkgo.RunSpecsWithDefaultAndCustomReporters(t, suiteName,
 		[]ginkgo.Reporter{reporters.NewJUnitReporter(
 			fmt.Sprintf("%v_junit.xml", strings.ToLower(suiteName)))})

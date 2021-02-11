@@ -12,6 +12,7 @@ linters:
     - dogsled
     - dupl
     - errcheck
+    - errorlint
     - exhaustive
     - exportloopref
     - gci
@@ -32,16 +33,20 @@ linters:
     - gosec
     - gosimple
     - govet
+    - ifshort
     - ineffassign
     - interfacer
     - lll
+    - makezero
     - maligned
     - misspell
     - nakedret
     - nlreturn
     - noctx
     - nolintlint
+    - paralleltest
     - prealloc
+    - predeclared
     - rowserrcheck
     - scopelint
     - sqlclosecheck
@@ -49,17 +54,21 @@ linters:
     - structcheck
     - stylecheck
     - testpackage
+    - thelper
     - typecheck
     - unconvert
     - unparam
     - unused
     - varcheck
     - whitespace
+    # - exhaustivestruct
+    # - forbidigo
     # - funlen
     # - godot
     # - goerr113
     # - gomnd
     # - nestif
+    # - wrapcheck
     # - wsl
 linters-settings:
   errcheck:

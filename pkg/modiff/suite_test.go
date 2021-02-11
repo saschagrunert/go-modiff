@@ -10,6 +10,7 @@ import (
 
 // TestModiff runs the created specs
 func TestModiff(t *testing.T) {
+	t.Parallel()
 	RegisterFailHandler(Fail)
 	RunFrameworkSpecs(t, "modiff")
 }

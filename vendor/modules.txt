@@ -1,4 +1,4 @@
-# github.com/cpuguy83/go-md2man/v2 v2.0.0
+# github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d
 github.com/cpuguy83/go-md2man/v2/md2man
 # github.com/fatih/color v1.9.0
 github.com/fatih/color
@@ -56,8 +56,6 @@ github.com/onsi/gomega/matchers/support/goraph/edge
 github.com/onsi/gomega/matchers/support/goraph/node
 github.com/onsi/gomega/matchers/support/goraph/util
 github.com/onsi/gomega/types
-# github.com/pkg/errors v0.9.1
-github.com/pkg/errors
 # github.com/russross/blackfriday/v2 v2.0.1
 github.com/russross/blackfriday/v2
 # github.com/saschagrunert/ccli v1.0.2-0.20200423111659-b68f755cc0f5
@@ -71,15 +69,15 @@ github.com/sirupsen/logrus
 # github.com/urfave/cli/v2 v2.2.0
 ## explicit
 github.com/urfave/cli/v2
-# golang.org/x/net v0.0.0-20200930145003-4acb6c075d10
+# golang.org/x/net v0.0.0-20200520004742-59133d7f0dd7
 golang.org/x/net/html
 golang.org/x/net/html/atom
 golang.org/x/net/html/charset
-# golang.org/x/sys v0.0.0-20200905004654-be1d3432aa8f
+# golang.org/x/sys v0.0.0-20200519105757-fe76b779f299
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/text v0.3.3
+# golang.org/x/text v0.3.2
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
 golang.org/x/text/encoding/htmlindex
@@ -97,13 +95,10 @@ golang.org/x/text/internal/utf8internal
 golang.org/x/text/language
 golang.org/x/text/runes
 golang.org/x/text/transform
-# golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
+# golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543
 golang.org/x/xerrors
 golang.org/x/xerrors/internal
 # gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7
 gopkg.in/tomb.v1
 # gopkg.in/yaml.v2 v2.3.0
 gopkg.in/yaml.v2
-# k8s.io/release v0.4.2
-## explicit
-k8s.io/release/pkg/command

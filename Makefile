@@ -1,15 +1,7 @@
 GO ?= go
 
-# test for go module support
-ifeq ($(shell go help mod >/dev/null 2>&1 && echo true), true)
-export GO_BUILD=GO111MODULE=on $(GO) build -mod=vendor
-else
-export GO_BUILD=$(GO) build
-endif
-
 BUILD_PATH := build
 COVERAGE_PATH := $(BUILD_PATH)/coverage
-JUNIT_PATH := $(BUILD_PATH)/junit
 
 GOLANGCI_LINT := $(BUILD_PATH)/golangci-lint
 GO_MODIFF := $(BUILD_PATH)/go-modiff
@@ -49,13 +41,13 @@ $(GO_MODIFF_STATIC):
 
 $(GOLANGCI_LINT):
 	export \
-		VERSION=v1.36.0 \
+		VERSION=v1.46.2 \
 		URL=https://raw.githubusercontent.com/golangci/golangci-lint \
 		BINDIR=$(BUILD_PATH) && \
 	curl -sfL $$URL/$$VERSION/install.sh | sh -s $$VERSION
 
 $(GINKGO):
-	$(call go-build,./vendor/github.com/onsi/ginkgo/ginkgo)
+	$(call go-build,./vendor/github.com/onsi/ginkgo/v2/ginkgo)
 
 .PHONY: lint
 lint: $(GOLANGCI_LINT)
@@ -65,21 +57,21 @@ lint: $(GOLANGCI_LINT)
 .PHONY: test
 test: $(GINKGO)
 	rm -rf $(COVERAGE_PATH) && mkdir -p $(COVERAGE_PATH)
-	rm -rf $(JUNIT_PATH) && mkdir -p $(JUNIT_PATH)
-	$(BUILD_PATH)/ginkgo $(TESTFLAGS) \
+	$(BUILD_PATH)/ginkgo run $(TESTFLAGS) \
 		-r -p \
 		--cover \
 		--mod vendor \
-		--randomizeAllSpecs \
-		--randomizeSuites \
+		--randomize-all \
+		--randomize-suites \
 		--covermode atomic \
-		--outputdir $(COVERAGE_PATH) \
+		--output-dir $(COVERAGE_PATH) \
 		--coverprofile coverprofile \
-		--slowSpecThreshold 60 \
+		--junit-report junit.xml \
+		--slow-spec-threshold 60s \
+		--trace \
 		--succinct
 	$(GO) tool cover -html=$(COVERAGE_PATH)/coverprofile -o $(COVERAGE_PATH)/coverage.html
-	$(GO) tool cover -func=$(COVERAGE_PATH)/coverprofile | sed -n 's/\(total:\).*\([0-9][0-9].[0-9]\)/\1 \2/p'
-	find . -name '*_junit.xml' -exec mv -t $(JUNIT_PATH) {} +
+	$(GO) tool cover -func=$(COVERAGE_PATH)/coverprofile
 
 .PHONY: vendor
 vendor:

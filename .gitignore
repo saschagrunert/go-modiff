@@ -7,5 +7,5 @@
 *.so
 *.test
 *_junit.xml
-build
+/build
 coverprofile*

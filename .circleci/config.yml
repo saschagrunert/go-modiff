@@ -3,13 +3,13 @@ version: 2.1
 
 stdenv: &stdenv
   environment:
-    GOCACHE: &gocache /tmp/go-build
-    WORKDIR: &workdir /go/src/github.com/saschagrunert/go-modiff
+    GOCACHE: &gocache /home/circleci/.cache/go-build
+    WORKDIR: &workdir /home/circleci/go/src/github.com/saschagrunert/go-modiff
 
 executors:
   container:
     docker:
-      - image: circleci/golang:1.14
+      - image: cimg/go:1.18
         user: circleci
     <<: *stdenv
     working_directory: *workdir
@@ -32,13 +32,13 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - v1-build-{{ checksum "go.sum" }}
+            - v2-build-{{ checksum "go.sum" }}
       - run: go version
       - run:
           name: build
           command: make
       - save_cache:
-          key: v1-build-{{ checksum "go.sum" }}
+          key: v2-build-{{ checksum "go.sum" }}
           paths:
             - build/go-modiff
             - *gocache
@@ -52,14 +52,14 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - v1-build-static-{{ checksum "go.sum" }}
+            - v2-build-static-{{ checksum "go.sum" }}
       - run: go version
       - run:
           name: build
           command: |
             make build/go-modiff.static
       - save_cache:
-          key: v1-build-static-{{ checksum "go.sum" }}
+          key: v2-build-static-{{ checksum "go.sum" }}
           paths:
             - build/go-modiff
             - *gocache
@@ -73,14 +73,14 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - v1-docs-{{ checksum "go.sum" }}
+            - v2-docs-{{ checksum "go.sum" }}
       - run:
           name: docs
           command: |
             make docs
             .circleci/git-status
       - save_cache:
-          key: v1-docs-{{ checksum "go.sum" }}
+          key: v2-docs-{{ checksum "go.sum" }}
           paths:
             - build/go-modiff
             - *gocache
@@ -109,7 +109,7 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - v1-test-{{ checksum "go.sum" }}
+            - v2-test-{{ checksum "go.sum" }}
       - run:
           name: test
           command: make test
@@ -117,9 +117,9 @@ jobs:
           name: code coverage
           command: make codecov
       - store_test_results:
-          path: build/junit
+          path: build/coverage
       - save_cache:
-          key: v1-test-{{ checksum "go.sum" }}
+          key: v2-test-{{ checksum "go.sum" }}
           paths:
             - *gocache
             - build/ginkgo
@@ -130,13 +130,13 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - v1-vendor-{{ checksum "go.sum" }}
+            - v2-vendor-{{ checksum "go.sum" }}
       - run:
           name: check vendoring
           command: |
             make vendor
             .circleci/git-status
       - save_cache:
-          key: v1-vendor-{{ checksum "go.sum" }}
+          key: v2-vendor-{{ checksum "go.sum" }}
           paths:
-            - /go/pkg
+            - /home/circleci/go/pkg

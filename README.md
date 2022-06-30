@@ -1,7 +1,7 @@
 # go-modiff 📔
 
 [![CircleCI](https://circleci.com/gh/saschagrunert/go-modiff.svg?style=shield)](https://circleci.com/gh/saschagrunert/go-modiff)
-[![codecov](https://codecov.io/gh/saschagrunert/go-modiff/branch/master/graph/badge.svg)](https://codecov.io/gh/saschagrunert/go-modiff)
+[![codecov](https://codecov.io/gh/saschagrunert/go-modiff/branch/main/graph/badge.svg)](https://codecov.io/gh/saschagrunert/go-modiff)
 
 ## Command line tool for diffing go module dependency changes between versions
 
@@ -31,9 +31,11 @@ INFO Done, the result will be printed to `stdout`
 # Dependencies
 
 ## Added
+
 - github.com/creack/pty: v1.1.7
 
 ## Changed
+
 - github.com/containerd/go-runc: 7d11b49 → 9007c24
 - github.com/containerd/project: 831961d → 7fb81da
 - github.com/containerd/ttrpc: 2a805f7 → 1fb3814
@@ -47,6 +49,7 @@ INFO Done, the result will be printed to `stdout`
 - honnef.co/go/tools: e561f67 → ea95bdf
 
 ## Removed
+
 _Nothing has changed._
 ```
 
@@ -57,16 +60,19 @@ The output would then look like this:
 # Dependencies
 
 ## Added
+
 - github.com/shurcooL/httpfs: [8d4bc4b](https://github.com/shurcooL/httpfs/tree/8d4bc4b)
 - github.com/shurcooL/vfsgen: [6a9ea43](https://github.com/shurcooL/vfsgen/tree/6a9ea43)
 
 ## Changed
+
 - github.com/onsi/ginkgo: [v1.8.0 → v1.9.0](https://github.com/onsi/ginkgo/compare/v1.8.0...v1.9.0)
 - github.com/onsi/gomega: [v1.5.0 → v1.6.0](https://github.com/onsi/gomega/compare/v1.5.0...v1.6.0)
 - github.com/saschagrunert/ccli: [e981d95 → 05e6f25](https://github.com/saschagrunert/ccli/compare/e981d95...05e6f25)
 - github.com/urfave/cli: [v1.20.0 → 23c8303](https://github.com/urfave/cli/compare/v1.20.0...23c8303)
 
 ## Removed
+
 - github.com/saschagrunert/go-docgen: [v0.1.3](https://github.com/saschagrunert/go-docgen/tree/v0.1.3)
 ```
 

@@ -111,7 +111,7 @@ func main() {
 		)
 		res, err := modiff.Run(config)
 		if err != nil {
-			return err
+			return fmt.Errorf("unable to run: %w", err)
 		}
 		logrus.Info("Done, the result will be printed to `stdout`")
 		fmt.Print(res)
@@ -131,7 +131,7 @@ func docs(c *cli.Context) (err error) {
 		res, err = c.App.ToMan()
 	}
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to run docs cmd: %w", err)
 	}
 	fmt.Printf("%v\n", res)
 
@@ -141,7 +141,7 @@ func docs(c *cli.Context) (err error) {
 func fish(c *cli.Context) (err error) {
 	res, err := c.App.ToFishCompletion()
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to run completions cmd: %w", err)
 	}
 	fmt.Printf("%v", res)
 

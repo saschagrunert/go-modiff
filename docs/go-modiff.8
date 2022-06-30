@@ -1,35 +1,30 @@
 .nh
-.TH go\-modiff 8
+.TH go-modiff 8
 
 .SH NAME
 .PP
-go\-modiff \- Command line tool for diffing go module dependency changes between versions
+go-modiff - Command line tool for diffing go module dependency changes between versions
 
 
 .SH SYNOPSIS
 .PP
-go\-modiff
+go-modiff
 
 .PP
 .RS
 
 .nf
-[\-\-debug|\-d]
-[\-\-from|\-f]=[value]
-[\-\-header\-level|\-i]=[value]
-[\-\-help|\-h]
-[\-\-link|\-l]
-[\-\-repository|\-r]=[value]
-[\-\-to|\-t]=[value]
-[\-\-version|\-v]
+[--debug|-d]
+[--from|-f]=[value]
+[--header-level|-i]=[value]
+[--help|-h]
+[--link|-l]
+[--repository|-r]=[value]
+[--to|-t]=[value]
+[--version|-v]
 
 .fi
 .RE
-
-
-.SH DESCRIPTION
-.PP
-Command line tool for diffing go module dependency changes between versions
 
 .PP
 \fBUsage\fP:
@@ -38,7 +33,7 @@ Command line tool for diffing go module dependency changes between versions
 .RS
 
 .nf
-go\-modiff [GLOBAL OPTIONS] command [COMMAND OPTIONS] [ARGUMENTS...]
+Command line tool for diffing go module dependency changes between versions
 
 .fi
 .RE
@@ -46,28 +41,28 @@ go\-modiff [GLOBAL OPTIONS] command [COMMAND OPTIONS] [ARGUMENTS...]
 
 .SH GLOBAL OPTIONS
 .PP
-\fB\-\-debug, \-d\fP: enable debug output
+\fB--debug, -d\fP: enable debug output
 
 .PP
-\fB\-\-from, \-f\fP="": the start of the comparison, any valid git rev (default: master)
+\fB--from, -f\fP="": the start of the comparison, any valid git rev (default: master)
 
 .PP
-\fB\-\-header\-level, \-i\fP="": add a higher markdown header level depth (default: 1)
+\fB--header-level, -i\fP="": add a higher markdown header level depth (default: 1)
 
 .PP
-\fB\-\-help, \-h\fP: show help
+\fB--help, -h\fP: show help
 
 .PP
-\fB\-\-link, \-l\fP: add diff links to the markdown output
+\fB--link, -l\fP: add diff links to the markdown output
 
 .PP
-\fB\-\-repository, \-r\fP="": repository to be used, like: github.com/owner/repo
+\fB--repository, -r\fP="": repository to be used, like: github.com/owner/repo
 
 .PP
-\fB\-\-to, \-t\fP="": the end of the comparison, any valid git rev (default: master)
+\fB--to, -t\fP="": the end of the comparison, any valid git rev (default: master)
 
 .PP
-\fB\-\-version, \-v\fP: print the version
+\fB--version, -v\fP: print the version
 
 
 .SH COMMANDS
@@ -76,13 +71,13 @@ go\-modiff [GLOBAL OPTIONS] command [COMMAND OPTIONS] [ARGUMENTS...]
 generate the markdown or man page documentation and print it to stdout
 
 .PP
-\fB\-\-help, \-h\fP: show help
+\fB--help, -h\fP: show help
 
 .PP
-\fB\-\-man\fP: print the man version
+\fB--man\fP: print the man version
 
 .PP
-\fB\-\-markdown\fP: print the markdown version
+\fB--markdown\fP: print the markdown version
 
 .SH fish, f
 .PP

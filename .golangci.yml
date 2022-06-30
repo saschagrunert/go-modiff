@@ -6,15 +6,24 @@ linters:
   disable-all: true
   enable:
     - asciicheck
+    - bidichk
     - bodyclose
+    - containedctx
+    - contextcheck
     - deadcode
+    - decorder
     - depguard
     - dogsled
     - dupl
+    - durationcheck
     - errcheck
+    - errchkjson
+    - errname
     - errorlint
+    - execinquery
     - exhaustive
     - exportloopref
+    - forcetypeassert
     - gci
     - gochecknoglobals
     - gochecknoinits
@@ -27,76 +36,117 @@ linters:
     - gofumpt
     - goheader
     - goimports
-    - golint
+    - gomoddirectives
     - gomodguard
     - goprintffuncname
     - gosec
     - gosimple
     - govet
+    - grouper
     - ifshort
+    - importas
     - ineffassign
-    - interfacer
+    - ireturn
     - lll
+    - maintidx
     - makezero
-    - maligned
     - misspell
     - nakedret
+    - nestif
+    - nilerr
+    - nilnil
     - nlreturn
     - noctx
     - nolintlint
+    - nosprintfhostport
     - paralleltest
     - prealloc
     - predeclared
+    - promlinter
+    - revive
     - rowserrcheck
-    - scopelint
     - sqlclosecheck
     - staticcheck
     - structcheck
     - stylecheck
+    - tagliatelle
+    - tenv
     - testpackage
     - thelper
+    - tparallel
     - typecheck
     - unconvert
     - unparam
     - unused
     - varcheck
+    - wastedassign
     - whitespace
+    - wrapcheck
+    # - cyclop
     # - exhaustivestruct
+    # - exhaustruct
     # - forbidigo
     # - funlen
     # - godot
     # - goerr113
     # - gomnd
-    # - nestif
-    # - wrapcheck
+    # - nonamedreturns
+    # - varnamelen
     # - wsl
 linters-settings:
+  gocognit:
+    min-complexity: 40
+  nestif:
+    min-complexity: 15
   errcheck:
     check-type-assertions: true
     check-blank: true
-  gocognit:
-    min-complexity: 35
+  godox:
+    keywords:
+      - BUG
+      - FIXME
+      - HACK
   gocritic:
     enabled-checks:
       # Diagnostic
       - appendAssign
       - argOrder
+      - badCall
       - badCond
+      - badLock
+      - badRegexp
+      - badSorting
+      - builtinShadowDecl
       - caseOrder
       - codegenComment
       - commentedOutCode
+      - deferInLoop
       - deprecatedComment
       - dupArg
       - dupBranchBody
       - dupCase
       - dupSubExpr
+      - dynamicFmtString
+      - emptyDecl
+      - evalOrder
       - exitAfterDefer
+      - externalErrorReassign
+      - filepathJoin
       - flagDeref
       - flagName
+      - mapKey
       - nilValReturn
-      - octalLiteral
       - offBy1
+      - regexpPattern
+      - returnAfterHttpError
       - sloppyReassign
+      - sloppyTypeAssert
+      - sortSlice
+      - sprintfQuotedString
+      - sqlQuery
+      - syncMapLoadAndDelete
+      - truncateCmp
+      - unnecessaryDefer
       - weakCond
 
       # Performance
@@ -104,8 +154,14 @@ linters-settings:
       - equalFold
       - hugeParam
       - indexAlloc
+      - preferDecodeRune
+      - preferFprint
+      - preferStringWriter
+      - preferWriteByte
       - rangeExprCopy
       - rangeValCopy
+      - sliceClear
+      - stringXbytes
 
       # Style
       - assignOp
@@ -114,19 +170,35 @@ linters-settings:
       - commentFormatting
       - commentedOutImport
       - defaultCaseOrder
+      - deferUnlambda
       - docStub
+      - dupImport
       - elseif
       - emptyFallthrough
       - emptyStringTest
+      - exposedSyncMutex
       - hexLiteral
+      - httpNoBody
       - ifElseChain
+      - ioutilDeprecated
       - methodExprCall
+      - newDeref
+      - octalLiteral
+      - preferFilepathJoin
+      - redundantSprint
       - regexpMust
+      - regexpSimplify
+      - ruleguard
       - singleCaseSwitch
       - sloppyLen
-      - stringXbytes
+      - stringConcatSimplify
+      - stringsCompare
       - switchTrue
+      - timeExprSimplify
+      - todoCommentWithoutDetail
+      - tooManyResultsChecker
       - typeAssertChain
+      - typeDefFirst
       - typeSwitchVar
       - underef
       - unlabelStmt
@@ -135,6 +207,7 @@ linters-settings:
       - valSwap
       - wrapperFunc
       - yodaStyleExpr
+      # - whyNoLint
 
       # Opinionated
       - builtinShadow

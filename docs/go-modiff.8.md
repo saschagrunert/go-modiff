@@ -1,5 +1,3 @@
-% go-modiff 8
-
 # NAME
 
 go-modiff - Command line tool for diffing go module dependency changes between versions
@@ -19,14 +17,10 @@ go-modiff
 [--version|-v]
 ```
 
-# DESCRIPTION
-
-Command line tool for diffing go module dependency changes between versions
-
 **Usage**:
 
 ```
-go-modiff [GLOBAL OPTIONS] command [COMMAND OPTIONS] [ARGUMENTS...]
+Command line tool for diffing go module dependency changes between versions
 ```
 
 # GLOBAL OPTIONS

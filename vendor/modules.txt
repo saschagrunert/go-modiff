@@ -63,7 +63,7 @@ github.com/russross/blackfriday/v2
 # github.com/saschagrunert/ccli v1.0.2-0.20200423111659-b68f755cc0f5
 ## explicit; go 1.13
 github.com/saschagrunert/ccli
-# github.com/sirupsen/logrus v1.8.1
+# github.com/sirupsen/logrus v1.9.0
 ## explicit; go 1.13
 github.com/sirupsen/logrus
 # github.com/urfave/cli/v2 v2.11.2
@@ -77,7 +77,7 @@ github.com/xrash/smetrics
 golang.org/x/net/html
 golang.org/x/net/html/atom
 golang.org/x/net/html/charset
-# golang.org/x/sys v0.0.0-20220422013727-9388b58f7150
+# golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8
 ## explicit; go 1.17
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix

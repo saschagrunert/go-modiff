@@ -272,7 +272,14 @@ func runCmdOutput(dir, cmd string, args ...string) ([]byte, error) {
 
 	output, err := c.Output()
 	if err != nil {
-		return nil, fmt.Errorf("unable to run cmd: %w", err)
+		return nil, fmt.Errorf(
+			"unable to run cmd: %s %s, workdir: %s, output: %s, error: %w",
+			cmd,
+			strings.Join(args, " "),
+			dir,
+			string(output),
+			err,
+		)
 	}
 
 	return output, nil

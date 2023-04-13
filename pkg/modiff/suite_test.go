@@ -15,7 +15,7 @@ func TestModiff(t *testing.T) {
 	RunFrameworkSpecs(t, "modiff")
 }
 
-// nolint: gochecknoglobals
+//nolint:gochecknoglobals // test framework should be global
 var t *TestFramework
 
 var _ = BeforeSuite(func() {

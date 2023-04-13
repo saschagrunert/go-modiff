@@ -41,7 +41,7 @@ $(GO_MODIFF_STATIC):
 
 $(GOLANGCI_LINT):
 	export \
-		VERSION=v1.46.2 \
+		VERSION=v1.52.2 \
 		URL=https://raw.githubusercontent.com/golangci/golangci-lint \
 		BINDIR=$(BUILD_PATH) && \
 	curl -sfL $$URL/$$VERSION/install.sh | sh -s $$VERSION
@@ -52,7 +52,7 @@ $(GINKGO):
 .PHONY: lint
 lint: $(GOLANGCI_LINT)
 	$(GOLANGCI_LINT) linters
-	$(GOLANGCI_LINT) run
+	GL_DEBUG=gocritic $(GOLANGCI_LINT) run
 
 .PHONY: test
 test: $(GINKGO)

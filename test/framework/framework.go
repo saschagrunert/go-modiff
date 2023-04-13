@@ -23,7 +23,7 @@ func NewTestFramework(setup, teardown func(*TestFramework) error) *TestFramework
 }
 
 // NilFunc is a convenience function which simply does nothing
-func NilFunc(f *TestFramework) error {
+func NilFunc(*TestFramework) error {
 	return nil
 }
 

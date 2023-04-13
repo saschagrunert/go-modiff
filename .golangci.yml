@@ -5,16 +5,17 @@ run:
 linters:
   disable-all: true
   enable:
+    - asasalint
     - asciicheck
     - bidichk
     - bodyclose
     - containedctx
     - contextcheck
-    - deadcode
     - decorder
     - depguard
     - dogsled
     - dupl
+    - dupword
     - durationcheck
     - errcheck
     - errchkjson
@@ -25,6 +26,8 @@ linters:
     - exportloopref
     - forcetypeassert
     - gci
+    - ginkgolinter
+    - gocheckcompilerdirectives
     - gochecknoglobals
     - gochecknoinits
     - gocognit
@@ -43,14 +46,16 @@ linters:
     - gosimple
     - govet
     - grouper
-    - ifshort
     - importas
     - ineffassign
+    - interfacebloat
     - ireturn
     - lll
+    - loggercheck
     - maintidx
     - makezero
     - misspell
+    - musttag
     - nakedret
     - nestif
     - nilerr
@@ -63,14 +68,15 @@ linters:
     - prealloc
     - predeclared
     - promlinter
+    - reassign
     - revive
     - rowserrcheck
     - sqlclosecheck
     - staticcheck
-    - structcheck
     - stylecheck
     - tagliatelle
     - tenv
+    - testableexamples
     - testpackage
     - thelper
     - tparallel
@@ -78,12 +84,11 @@ linters:
     - unconvert
     - unparam
     - unused
-    - varcheck
+    - usestdlibvars
     - wastedassign
     - whitespace
     - wrapcheck
     # - cyclop
-    # - exhaustivestruct
     # - exhaustruct
     # - forbidigo
     # - funlen
@@ -108,114 +113,109 @@ linters-settings:
       - HACK
   gocritic:
     enabled-checks:
-      # Diagnostic
       - appendAssign
+      - appendCombine
       - argOrder
+      - assignOp
       - badCall
       - badCond
       - badLock
       - badRegexp
       - badSorting
+      - boolExprSimplify
+      - builtinShadow
       - builtinShadowDecl
+      - captLocal
       - caseOrder
       - codegenComment
+      - commentFormatting
       - commentedOutCode
+      - commentedOutImport
+      - defaultCaseOrder
       - deferInLoop
+      - deferUnlambda
       - deprecatedComment
+      - docStub
       - dupArg
       - dupBranchBody
       - dupCase
+      - dupImport
       - dupSubExpr
       - dynamicFmtString
+      - elseif
       - emptyDecl
+      - emptyFallthrough
+      - emptyStringTest
+      - equalFold
       - evalOrder
       - exitAfterDefer
+      - exposedSyncMutex
       - externalErrorReassign
       - filepathJoin
       - flagDeref
       - flagName
+      - hexLiteral
+      - httpNoBody
+      - hugeParam
+      - ifElseChain
+      - importShadow
+      - indexAlloc
+      - initClause
       - mapKey
+      - methodExprCall
+      - nestingReduce
+      - newDeref
       - nilValReturn
+      - octalLiteral
       - offBy1
+      - paramTypeCombine
+      - preferDecodeRune
+      - preferFilepathJoin
+      - preferFprint
+      - preferStringWriter
+      - preferWriteByte
+      - ptrToRefParam
+      - rangeExprCopy
+      - rangeValCopy
+      - redundantSprint
+      - regexpMust
       - regexpPattern
+      - regexpSimplify
       - returnAfterHttpError
+      - ruleguard
+      - singleCaseSwitch
+      - sliceClear
+      - sloppyLen
       - sloppyReassign
+      - sloppyTestFuncName
       - sloppyTypeAssert
       - sortSlice
       - sprintfQuotedString
       - sqlQuery
-      - syncMapLoadAndDelete
-      - truncateCmp
-      - unnecessaryDefer
-      - weakCond
-
-      # Performance
-      - appendCombine
-      - equalFold
-      - hugeParam
-      - indexAlloc
-      - preferDecodeRune
-      - preferFprint
-      - preferStringWriter
-      - preferWriteByte
-      - rangeExprCopy
-      - rangeValCopy
-      - sliceClear
-      - stringXbytes
-
-      # Style
-      - assignOp
-      - boolExprSimplify
-      - captLocal
-      - commentFormatting
-      - commentedOutImport
-      - defaultCaseOrder
-      - deferUnlambda
-      - docStub
-      - dupImport
-      - elseif
-      - emptyFallthrough
-      - emptyStringTest
-      - exposedSyncMutex
-      - hexLiteral
-      - httpNoBody
-      - ifElseChain
-      - ioutilDeprecated
-      - methodExprCall
-      - newDeref
-      - octalLiteral
-      - preferFilepathJoin
-      - redundantSprint
-      - regexpMust
-      - regexpSimplify
-      - ruleguard
-      - singleCaseSwitch
-      - sloppyLen
       - stringConcatSimplify
+      - stringXbytes
       - stringsCompare
       - switchTrue
+      - syncMapLoadAndDelete
+      - timeCmpSimplify
       - timeExprSimplify
       - todoCommentWithoutDetail
       - tooManyResultsChecker
+      - truncateCmp
       - typeAssertChain
       - typeDefFirst
       - typeSwitchVar
+      - typeUnparen
+      - uncheckedInlineErr
       - underef
       - unlabelStmt
       - unlambda
-      - unslice
-      - valSwap
-      - wrapperFunc
-      - yodaStyleExpr
-      # - whyNoLint
-
-      # Opinionated
-      - builtinShadow
-      - importShadow
-      - initClause
-      - nestingReduce
-      - paramTypeCombine
-      - ptrToRefParam
-      - typeUnparen
       - unnamedResult
       - unnecessaryBlock
+      - unnecessaryDefer
+      - unslice
+      - valSwap
+      - weakCond
+      - whyNoLint
+      - wrapperFunc
+      - yodaStyleExpr

@@ -2,7 +2,7 @@
 
 function __fish_go-modiff_no_subcommand --description 'Test if there has been any subcommand yet'
     for i in (commandline -opc)
-        if contains -- $i docs d fish f help h
+        if contains -- $i docs d fish f help h help h
             return 1
         end
     end
@@ -26,5 +26,7 @@ complete -c go-modiff -n '__fish_seen_subcommand_from docs d' -f -l man -d 'prin
 complete -c go-modiff -n '__fish_seen_subcommand_from fish f' -f -l help -s h -d 'show help'
 complete -r -c go-modiff -n '__fish_go-modiff_no_subcommand' -a 'fish f' -d 'generate the fish shell completion'
 complete -c go-modiff -n '__fish_seen_subcommand_from fish f' -f -l help -s h -d 'show help'
+complete -c go-modiff -n '__fish_seen_subcommand_from help h' -f -l help -s h -d 'show help'
+complete -r -c go-modiff -n '__fish_seen_subcommand_from fish f' -a 'help h' -d 'Shows a list of commands or help for one command'
 complete -c go-modiff -n '__fish_seen_subcommand_from help h' -f -l help -s h -d 'show help'
 complete -r -c go-modiff -n '__fish_go-modiff_no_subcommand' -a 'help h' -d 'Shows a list of commands or help for one command'

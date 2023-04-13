@@ -24,7 +24,7 @@ _Nothing has changed._
 - github.com/gofrs/flock: 5135e61
 `
 
-	// nolint: lll
+	//nolint:lll // required formatting
 	const expectedWithLinks = `# Dependencies
 
 ## Added
@@ -58,7 +58,7 @@ _Nothing has changed._
 		res, err := modiff.Run(config)
 
 		// Then
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 		Expect(res).To(Equal(expected))
 	})
 
@@ -70,7 +70,7 @@ _Nothing has changed._
 		res, err := modiff.Run(config)
 
 		// Then
-		Expect(err).To(BeNil())
+		Expect(err).ToNot(HaveOccurred())
 		Expect(res).To(Equal(expectedWithLinks))
 	})
 
@@ -80,7 +80,7 @@ _Nothing has changed._
 		res, err := modiff.Run(nil)
 
 		// Then
-		Expect(err).NotTo(BeNil())
+		Expect(err).To(HaveOccurred())
 		Expect(res).To(BeEmpty())
 	})
 
@@ -92,7 +92,7 @@ _Nothing has changed._
 		res, err := modiff.Run(config)
 
 		// Then
-		Expect(err).NotTo(BeNil())
+		Expect(err).To(HaveOccurred())
 		Expect(res).To(BeEmpty())
 	})
 
@@ -104,7 +104,7 @@ _Nothing has changed._
 		res, err := modiff.Run(config)
 
 		// Then
-		Expect(err).NotTo(BeNil())
+		Expect(err).To(HaveOccurred())
 		Expect(res).To(BeEmpty())
 	})
 
@@ -116,7 +116,7 @@ _Nothing has changed._
 		res, err := modiff.Run(config)
 
 		// Then
-		Expect(err).NotTo(BeNil())
+		Expect(err).To(HaveOccurred())
 		Expect(res).To(BeEmpty())
 	})
 })

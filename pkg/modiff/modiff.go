@@ -2,6 +2,7 @@ package modiff
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -272,12 +273,19 @@ func runCmdOutput(dir, cmd string, args ...string) ([]byte, error) {
 
 	output, err := c.Output()
 	if err != nil {
+		var exitError *exec.ExitError
+		stderr := []byte{}
+		if errors.As(err, &exitError) {
+			stderr = exitError.Stderr
+		}
+
 		return nil, fmt.Errorf(
-			"unable to run cmd: %s %s, workdir: %s, output: %s, error: %w",
+			"unable to run cmd: %s %s, workdir: %s, stdout: %s, stderr: %v, error: %w",
 			cmd,
 			strings.Join(args, " "),
 			dir,
 			string(output),
+			string(stderr),
 			err,
 		)
 	}

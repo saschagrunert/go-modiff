@@ -9,7 +9,7 @@ stdenv: &stdenv
 executors:
   container:
     docker:
-      - image: cimg/go:1.20
+      - image: cimg/go:1.21
         user: circleci
     <<: *stdenv
     working_directory: *workdir

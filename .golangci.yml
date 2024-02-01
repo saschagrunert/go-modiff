@@ -12,7 +12,6 @@ linters:
     - containedctx
     - contextcheck
     - decorder
-    - depguard
     - dogsled
     - dupl
     - dupword
@@ -89,6 +88,7 @@ linters:
     - whitespace
     - wrapcheck
     # - cyclop
+    # - depguard
     # - exhaustruct
     # - forbidigo
     # - funlen

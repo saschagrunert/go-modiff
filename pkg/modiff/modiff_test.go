@@ -1,5 +1,6 @@
 package modiff_test
 
+//nolint:revive // test file
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

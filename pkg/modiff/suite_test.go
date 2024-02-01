@@ -1,5 +1,6 @@
 package modiff_test
 
+//nolint:revive // test file
 import (
 	"testing"
 

@@ -2,8 +2,10 @@ package modiff
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"slices"
@@ -216,7 +218,14 @@ func getModules(workDir, from, to string) (modules, error) {
 			linkPrefix := name
 			// Remove the module name from the link
 			if splitLink := strings.Split(linkPrefix, "/"); len(splitLink) == 4 {
-				linkPrefix = strings.Join(splitLink[:3], "/")
+				// Check if the last part of string is part of the tag.
+				linkPrefixTree := strings.Join(slices.Insert(splitLink, 3, "tree"), "/")
+				url := fmt.Sprintf("https://%s%s%s", linkPrefixTree, "/", strings.TrimSpace(split[1]))
+				// If the url is valid, then we keep the linkPrefix as is
+				client := http.Client{}
+				if valid, err := CheckURLValid(client, url); !valid && err == nil {
+					linkPrefix = strings.Join(splitLink[:3], "/")
+				}
 			}
 			version := strings.TrimSpace(split[1])
 
@@ -249,6 +258,25 @@ func getModules(workDir, from, to string) (modules, error) {
 	logrus.Infof("%d modules found", len(res))
 
 	return res, nil
+}
+
+func CheckURLValid(client http.Client, url string) (bool, error) {
+	ctx := context.Background()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	if err != nil {
+		return false, fmt.Errorf("error while creating request: %w", err)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return false, fmt.Errorf("error while sending request: %w", err)
+	} else if resp.StatusCode == http.StatusNotFound {
+		resp.Body.Close()
+
+		return false, nil
+	}
+	resp.Body.Close()
+
+	return true, nil
 }
 
 func retrieveModules(rev, workDir string) (string, error) {

@@ -5,14 +5,16 @@ package modiff
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"os"
 	"os/exec"
-	"slices"
+	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 )
@@ -21,10 +23,6 @@ const (
 	// gitHubPathSegments is the number of path segments in a standard
 	// GitHub module path (e.g. github.com/owner/repo).
 	gitHubPathSegments = 3
-
-	// gitHubSubpathSegments is the number of path segments when a module
-	// has an additional sub-path (e.g. github.com/owner/repo/subpath).
-	gitHubSubpathSegments = 4
 
 	// minModuleFields is the minimum number of fields expected when
 	// parsing a go list module line (name + version).
@@ -48,18 +46,43 @@ const (
 
 	// maxHeaderLevel is the maximum markdown header level (h6).
 	maxHeaderLevel = 6
+
+	// refSplitParts is the number of parts when splitting a git ref
+	// path (e.g. refs/tags/v1.0.0 splits into 3 parts).
+	refSplitParts = 3
+
+	// proxySplitParts is the number of parts when splitting GOPROXY
+	// env value at the first comma.
+	proxySplitParts = 2
+
+	// goProxyDefault is the default Go module proxy URL.
+	goProxyDefault = "https://proxy.golang.org"
 )
 
 var (
-	errNilConfig    = errors.New("config is nil")
-	errNoRepository = errors.New("repository is required")
-	errSameFromTo   = errors.New("no diff possible if `from` equals `to`")
+	errNilConfig      = errors.New("config is nil")
+	errNoRepository   = errors.New("repository is required")
+	errSameFromTo     = errors.New("no diff possible if `from` equals `to`")
+	errProxyBadStatus = errors.New("proxy returned unexpected status")
 )
+
+// goModOrigin holds VCS origin information from the Go module proxy.
+type goModOrigin struct {
+	VCS  string `json:"VCS"`  //nolint:tagliatelle // matches proxy response format
+	URL  string `json:"URL"`  //nolint:tagliatelle // matches proxy response format
+	Hash string `json:"Hash"` //nolint:tagliatelle // matches proxy response format
+	Ref  string `json:"Ref"`  //nolint:tagliatelle // matches proxy response format
+}
+
+// goModInfo holds module metadata from the Go module proxy.
+type goModInfo struct {
+	Version string      `json:"Version"` //nolint:tagliatelle // matches proxy response format
+	Origin  goModOrigin `json:"Origin"`  //nolint:tagliatelle // matches proxy response format
+}
 
 type entry struct {
 	beforeVersion string
 	afterVersion  string
-	linkPrefix    string
 }
 
 type modules = map[string]entry
@@ -104,36 +127,47 @@ func Run(ctx context.Context, config *Config) (string, error) {
 		}
 	}()
 
-	logrus.Infof("Setting up repository %s", config.repository)
-
-	err = runGit(ctx, dir, "init")
+	err = cloneRepos(ctx, dir, config)
 	if err != nil {
 		return logErr(err)
 	}
 
-	err = runGit(ctx, dir, "remote", "add", "origin", toURL(config.repository))
-	if err != nil {
-		return logErr(err)
-	}
-
-	mods, err := getModules(ctx, dir, config.from, config.to)
+	mods, err := getModules(ctx, filepath.Join(dir, "from"), filepath.Join(dir, "to"))
 	if err != nil {
 		return "", err
 	}
 
-	return diffModules(mods, config.link, config.headerLevel), nil
+	return diffModules(ctx, mods, config.link, config.headerLevel), nil
+}
+
+// CheckURLValid checks whether the given URL returns a valid (non-404) response.
+func CheckURLValid(ctx context.Context, client http.Client, targetURL string) (bool, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodHead, targetURL, http.NoBody)
+	if err != nil {
+		return false, fmt.Errorf("error while creating request: %w", err)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return false, fmt.Errorf("error while sending request: %w", err)
+	}
+
+	defer func() {
+		closeErr := resp.Body.Close()
+		if closeErr != nil {
+			logrus.Errorf("Failed to close response body: %v", closeErr)
+		}
+	}()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func toURL(name string) string {
 	return "https://" + name
-}
-
-func isGitHubURL(name string) bool {
-	return strings.HasPrefix(name, "github.com")
-}
-
-func sanitizeTag(tag string) string {
-	return strings.TrimSuffix(tag, "+incompatible")
 }
 
 func logErr(err error) (string, error) {
@@ -142,55 +176,192 @@ func logErr(err error) (string, error) {
 	return "", err
 }
 
-func buildTreeLink(splitPrefix []string, version string) string {
-	prefixWithTree := strings.Join(splitPrefix, "/") + "/tree"
-	if len(splitPrefix) >= gitHubPathSegments {
-		prefixWithTree = strings.Join(slices.Insert(splitPrefix, gitHubPathSegments, "tree"), "/")
+func goProxyURL() string {
+	proxyEnv, exists := os.LookupEnv("GOPROXY")
+	if !exists || proxyEnv == "" {
+		return goProxyDefault
 	}
 
-	return fmt.Sprintf("[%s](%s/%s)", version, toURL(prefixWithTree), sanitizeTag(version))
-}
-
-func buildCompareLink(mod entry, splitLinkPrefix []string) string {
-	prefixWithCompare := fmt.Sprintf("%s/%s", mod.linkPrefix, "compare")
-	afterVersion := sanitizeTag(mod.afterVersion)
-
-	if len(splitLinkPrefix) > gitHubPathSegments {
-		prefixWithCompare = strings.Join(slices.Insert(splitLinkPrefix, gitHubPathSegments, "compare"), "/")
-		afterVersion = fmt.Sprintf("%s/%s", strings.Join(splitLinkPrefix[gitHubPathSegments:], "/"), afterVersion)
+	first := strings.SplitN(proxyEnv, ",", proxySplitParts)[0]
+	if first == "direct" || first == "off" {
+		return goProxyDefault
 	}
 
-	return fmt.Sprintf("[%s → %s](%s/%s...%s)",
-		mod.beforeVersion, mod.afterVersion, toURL(prefixWithCompare),
-		sanitizeTag(mod.beforeVersion), afterVersion)
+	return first
 }
 
-func classifyModule(mod entry, name string, addLinks bool) (string, string) {
+func (info *goModInfo) isKnownHost() bool {
+	return info.Origin.URL != "" &&
+		(strings.HasPrefix(info.Origin.URL, "https://github.com/") ||
+			strings.HasPrefix(info.Origin.URL, "https://go.googlesource.com/"))
+}
+
+func isGitHubModule(name string) bool {
+	return strings.HasPrefix(name, "github.com/")
+}
+
+func gitHubBaseURL(name string) string {
+	parts := strings.Split(name, "/")
+	if len(parts) >= gitHubPathSegments {
+		return "https://" + strings.Join(parts[:gitHubPathSegments], "/")
+	}
+
+	return "https://" + name
+}
+
+func (info *goModInfo) refName() string {
+	if info.Origin.Ref == "" {
+		return info.Origin.Hash
+	}
+
+	parts := strings.SplitN(info.Origin.Ref, "/", refSplitParts)
+	if len(parts) == refSplitParts {
+		return parts[refSplitParts-1]
+	}
+
+	return info.Origin.Ref
+}
+
+func (info *goModInfo) commitURL() string {
+	if strings.HasPrefix(info.Origin.URL, "https://github.com/") {
+		return fmt.Sprintf("%s/commit/%s", info.Origin.URL, info.Origin.Hash)
+	}
+
+	if strings.HasPrefix(info.Origin.URL, "https://go.googlesource.com/") {
+		return fmt.Sprintf("%s/+/%s", info.Origin.URL, info.Origin.Hash)
+	}
+
+	return ""
+}
+
+func (info *goModInfo) compareURL(other *goModInfo) string {
+	if strings.HasPrefix(info.Origin.URL, "https://github.com/") {
+		return fmt.Sprintf(
+			"%s/compare/%s...%s",
+			info.Origin.URL, info.refName(), other.refName(),
+		)
+	}
+
+	if strings.HasPrefix(info.Origin.URL, "https://go.googlesource.com/") {
+		return fmt.Sprintf(
+			"%s/+/%s^1..%s/",
+			info.Origin.URL, info.Origin.Hash, other.Origin.Hash,
+		)
+	}
+
+	return ""
+}
+
+func fetchModInfo(ctx context.Context, module, version string) (goModInfo, error) {
+	var info goModInfo
+
+	infoURL := fmt.Sprintf("%s/%s/@v/%s.info", goProxyURL(), module, version)
+	logrus.Debugf("Fetching module info from %s", infoURL)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, infoURL, http.NoBody)
+	if err != nil {
+		return info, fmt.Errorf("creating proxy request: %w", err)
+	}
+
+	client := http.Client{} //nolint:exhaustruct // zero value client is intentional
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return info, fmt.Errorf("fetching module info from proxy: %w", err)
+	}
+
+	defer func() {
+		closeErr := resp.Body.Close()
+		if closeErr != nil {
+			logrus.Errorf("Failed to close response body: %v", closeErr)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return info, fmt.Errorf(
+			"%w %d for %s@%s",
+			errProxyBadStatus, resp.StatusCode, module, version,
+		)
+	}
+
+	err = json.NewDecoder(resp.Body).Decode(&info)
+	if err != nil {
+		return info, fmt.Errorf("decoding proxy response: %w", err)
+	}
+
+	return info, nil
+}
+
+func cloneRepos(ctx context.Context, dir string, config *Config) error {
+	referenceDir := filepath.Join(dir, "reference")
+
+	logrus.Infof("Cloning reference repository %s", config.repository)
+
+	err := runGit(
+		ctx, dir, "clone", "--filter=blob:none", "--bare",
+		toURL(config.repository), referenceDir,
+	)
+	if err != nil {
+		return err
+	}
+
+	logrus.Infof("Setting up 'from' at %s", config.from)
+
+	err = cloneAtRevision(ctx, dir, referenceDir, config.repository, config.from, filepath.Join(dir, "from"))
+	if err != nil {
+		return err
+	}
+
+	logrus.Infof("Setting up 'to' at %s", config.to)
+
+	return cloneAtRevision(ctx, dir, referenceDir, config.repository, config.to, filepath.Join(dir, "to"))
+}
+
+func cloneAtRevision(ctx context.Context, parentDir, referenceDir, repository, rev, targetDir string) error {
+	err := runGit(
+		ctx, parentDir, "clone", "--filter=blob:none",
+		"--reference", referenceDir, "--no-checkout",
+		toURL(repository), targetDir,
+	)
+	if err != nil {
+		return err
+	}
+
+	return runGit(ctx, targetDir, "checkout", rev)
+}
+
+func prettifyVersion(version string) string {
+	version = strings.TrimSuffix(version, "+incompatible")
+
+	versionSplit := strings.Split(version, "-")
+	if len(versionSplit) < minPseudoVersionParts {
+		return version
+	}
+
+	hash := versionSplit[len(versionSplit)-1]
+	if len(hash) > shortHashLength {
+		return hash[:shortHashLength]
+	}
+
+	// This should never happen but who knows what go modules will do next.
+	return hash
+}
+
+func classifyModule(mod entry, name string, addLinks bool, beforeInfo, afterInfo *goModInfo) (string, string) {
+	beforeDisplay := prettifyVersion(mod.beforeVersion)
+	afterDisplay := prettifyVersion(mod.afterVersion)
 	txt := fmt.Sprintf("- %s: ", name)
-	splitLinkPrefix := strings.Split(mod.linkPrefix, "/")
 
 	if mod.beforeVersion == "" { //nolint:gocritic // if-else chain is clearer here
-		if addLinks && isGitHubURL(mod.linkPrefix) {
-			txt += buildTreeLink(splitLinkPrefix, mod.afterVersion)
-		} else {
-			txt += mod.afterVersion
-		}
+		txt += formatSingle(afterDisplay, afterInfo, name, addLinks)
 
 		return "added", txt
 	} else if mod.afterVersion == "" {
-		if addLinks && isGitHubURL(mod.linkPrefix) {
-			txt += buildTreeLink(splitLinkPrefix, mod.beforeVersion)
-		} else {
-			txt += mod.beforeVersion
-		}
+		txt += formatSingle(beforeDisplay, beforeInfo, name, addLinks)
 
 		return "removed", txt
 	} else if mod.beforeVersion != mod.afterVersion {
-		if addLinks && isGitHubURL(mod.linkPrefix) {
-			txt += buildCompareLink(mod, splitLinkPrefix)
-		} else {
-			txt += fmt.Sprintf("%s → %s", mod.beforeVersion, mod.afterVersion)
-		}
+		txt += formatChanged(beforeDisplay, afterDisplay, beforeInfo, afterInfo, name, addLinks)
 
 		return "changed", txt
 	}
@@ -198,19 +369,93 @@ func classifyModule(mod entry, name string, addLinks bool) (string, string) {
 	return "", ""
 }
 
-func diffModules(mods modules, addLinks bool, headerLevel uint) string {
+func formatSingle(display string, info *goModInfo, name string, addLinks bool) string {
+	if !addLinks {
+		return display
+	}
+
+	if info != nil && info.isKnownHost() {
+		return fmt.Sprintf("[%s](%s)", display, info.commitURL())
+	}
+
+	if isGitHubModule(name) {
+		return fmt.Sprintf("[%s](%s/tree/%s)", display, gitHubBaseURL(name), display)
+	}
+
+	return display
+}
+
+func formatChanged(
+	beforeDisplay, afterDisplay string, beforeInfo, afterInfo *goModInfo, name string, addLinks bool,
+) string {
+	if !addLinks {
+		return fmt.Sprintf("%s → %s", beforeDisplay, afterDisplay)
+	}
+
+	if beforeInfo != nil && afterInfo != nil && beforeInfo.isKnownHost() {
+		return fmt.Sprintf("[%s → %s](%s)", beforeDisplay, afterDisplay, beforeInfo.compareURL(afterInfo))
+	}
+
+	if isGitHubModule(name) {
+		return fmt.Sprintf(
+			"[%s → %s](%s/compare/%s...%s)",
+			beforeDisplay, afterDisplay, gitHubBaseURL(name), beforeDisplay, afterDisplay,
+		)
+	}
+
+	return fmt.Sprintf("%s → %s", beforeDisplay, afterDisplay)
+}
+
+type classifiedModule struct {
+	category string
+	txt      string
+}
+
+func diffModules(ctx context.Context, mods modules, addLinks bool, headerLevel uint) string {
+	results := make(map[string]classifiedModule, len(mods))
+
+	if addLinks {
+		var (
+			mutex   sync.Mutex
+			waitGrp sync.WaitGroup
+			//nolint:mnd // reasonable concurrency limit for HTTP requests
+			semaphore = make(chan struct{}, 10)
+		)
+
+		for name, mod := range mods {
+			waitGrp.Go(func() {
+				semaphore <- struct{}{}
+
+				beforeInfo, afterInfo := fetchModInfoPair(ctx, name, mod)
+
+				<-semaphore
+
+				category, txt := classifyModule(mod, name, addLinks, beforeInfo, afterInfo)
+
+				mutex.Lock()
+				results[name] = classifiedModule{category, txt}
+				mutex.Unlock()
+			})
+		}
+
+		waitGrp.Wait()
+	} else {
+		for name, mod := range mods {
+			category, txt := classifyModule(mod, name, addLinks, nil, nil)
+			results[name] = classifiedModule{category, txt}
+		}
+	}
+
 	var added, removed, changed []string
 
-	for name, mod := range mods {
-		category, txt := classifyModule(mod, name, addLinks)
-
-		switch category {
+	for _, res := range results {
+		switch res.category {
 		case "added":
-			added = append(added, txt)
+			added = append(added, res.txt)
 		case "removed":
-			removed = append(removed, txt)
+			removed = append(removed, res.txt)
 		case "changed":
-			changed = append(changed, txt)
+			changed = append(changed, res.txt)
 		}
 	}
 
@@ -222,6 +467,30 @@ func diffModules(mods modules, addLinks bool, headerLevel uint) string {
 	logrus.Infof("%d modules removed", len(removed))
 
 	return formatMarkdown(added, changed, removed, headerLevel)
+}
+
+func fetchModInfoPair(ctx context.Context, name string, mod entry) (*goModInfo, *goModInfo) {
+	var beforeInfo, afterInfo *goModInfo
+
+	if mod.beforeVersion != "" {
+		info, err := fetchModInfo(ctx, name, mod.beforeVersion)
+		if err != nil {
+			logrus.Debugf("Could not fetch module info for %s@%s: %v", name, mod.beforeVersion, err)
+		} else {
+			beforeInfo = &info
+		}
+	}
+
+	if mod.afterVersion != "" {
+		info, err := fetchModInfo(ctx, name, mod.afterVersion)
+		if err != nil {
+			logrus.Debugf("Could not fetch module info for %s@%s: %v", name, mod.afterVersion, err)
+		} else {
+			afterInfo = &info
+		}
+	}
+
+	return beforeInfo, afterInfo
 }
 
 func formatMarkdown(added, changed, removed []string, headerLevel uint) string {
@@ -254,54 +523,17 @@ func formatMarkdown(added, changed, removed []string, headerLevel uint) string {
 	return builder.String()
 }
 
-func resolveLinkPrefix(ctx context.Context, name, version string) string {
-	linkPrefix := name
-
-	splitLink := strings.Split(linkPrefix, "/")
-	if len(splitLink) != gitHubSubpathSegments {
-		return linkPrefix
-	}
-
-	// Check if the last part of the string is part of the tag.
-	linkPrefixTree := strings.Join(slices.Insert(splitLink, gitHubPathSegments, "tree"), "/")
-	checkURL := fmt.Sprintf("https://%s/%s", linkPrefixTree, strings.TrimSpace(version))
-
-	client := http.Client{} //nolint:exhaustruct // zero value client is intentional
-	valid, err := CheckURLValid(ctx, client, checkURL)
-
-	if !valid && err == nil {
-		linkPrefix = strings.Join(splitLink[:gitHubPathSegments], "/")
-	}
-
-	return linkPrefix
-}
-
-func prettifyVersion(version string) string {
-	versionSplit := strings.Split(version, "-")
-	if len(versionSplit) < minPseudoVersionParts {
-		return version
-	}
-
-	hash := versionSplit[len(versionSplit)-1]
-	if len(hash) > shortHashLength {
-		return hash[:shortHashLength]
-	}
-
-	// This should never happen but who knows what go modules will do next.
-	return hash
-}
-
-func parseModuleLine(ctx context.Context, line string) (string, string, string, bool) {
+func parseModuleLine(line string) (string, string, bool) {
 	split := strings.Split(line, " ")
 	if len(split) < minModuleFields {
-		return "", "", "", false
+		return "", "", false
 	}
 
 	// Rewrites have to be handled differently.
 	if len(split) > minModuleFields && split[2] == "=>" {
 		// Local rewrites without any version will be skipped.
 		if len(split) == localRewriteFields {
-			return "", "", "", false
+			return "", "", false
 		}
 
 		// Use the rewritten version and name if available.
@@ -312,29 +544,53 @@ func parseModuleLine(ctx context.Context, line string) (string, string, string, 
 	}
 
 	modName := strings.TrimSpace(split[0])
-	modLinkPrefix := resolveLinkPrefix(ctx, modName, split[1])
-	modVersion := prettifyVersion(strings.TrimSpace(split[1]))
+	modVersion := strings.TrimSpace(split[1])
 
-	return modName, modLinkPrefix, modVersion, true
+	return modName, modVersion, true
 }
 
-func getModules(ctx context.Context, workDir, fromRev, toRev string) (modules, error) {
-	before, err := retrieveModules(ctx, fromRev, workDir)
+func toLineSet(input string) map[string]bool {
+	lines := make(map[string]bool)
+
+	scanner := bufio.NewScanner(strings.NewReader(input))
+	for scanner.Scan() {
+		lines[scanner.Text()] = true
+	}
+
+	return lines
+}
+
+func getModules(ctx context.Context, fromDir, toDir string) (modules, error) {
+	before, err := retrieveModules(ctx, fromDir)
 	if err != nil {
 		return nil, err
 	}
 
-	after, err := retrieveModules(ctx, toRev, workDir)
+	after, err := retrieveModules(ctx, toDir)
 	if err != nil {
 		return nil, err
 	}
+
+	beforeLines := toLineSet(before)
+	afterLines := toLineSet(after)
+
+	logrus.Info("Processing module diffs")
 
 	result := modules{}
 
-	parseInto := func(input string, apply func(result *entry, version string)) {
+	parseInto := func(input string, skipLines map[string]bool, apply func(result *entry, version string)) {
 		scanner := bufio.NewScanner(strings.NewReader(input))
 		for scanner.Scan() {
-			name, linkPrefix, version, ok := parseModuleLine(ctx, scanner.Text())
+			line := scanner.Text()
+
+			// Skip lines present in both lists (unchanged).
+			if skipLines[line] {
+				logrus.Debugf("Skipping unchanged module: %s", line)
+
+				continue
+			}
+
+			name, version, ok := parseModuleLine(line)
 			if !ok {
 				continue
 			}
@@ -345,61 +601,20 @@ func getModules(ctx context.Context, workDir, fromRev, toRev string) (modules, e
 			}
 
 			apply(modEntry, version)
-			modEntry.linkPrefix = linkPrefix
 			result[name] = *modEntry
 		}
 	}
 
-	parseInto(before, func(result *entry, version string) { result.beforeVersion = version })
-	parseInto(after, func(result *entry, version string) { result.afterVersion = version })
+	parseInto(before, afterLines, func(result *entry, version string) { result.beforeVersion = version })
+	parseInto(after, beforeLines, func(result *entry, version string) { result.afterVersion = version })
 
 	logrus.Infof("%d modules found", len(result))
 
 	return result, nil
 }
 
-// CheckURLValid checks whether the given URL returns a valid (non-404) response.
-func CheckURLValid(ctx context.Context, client http.Client, targetURL string) (bool, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, targetURL, http.NoBody)
-	if err != nil {
-		return false, fmt.Errorf("error while creating request: %w", err)
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return false, fmt.Errorf("error while sending request: %w", err)
-	}
-
-	defer func() {
-		closeErr := resp.Body.Close()
-		if closeErr != nil {
-			logrus.Errorf("Failed to close response body: %v", closeErr)
-		}
-	}()
-
-	if resp.StatusCode == http.StatusNotFound {
-		return false, nil
-	}
-
-	return true, nil
-}
-
-func retrieveModules(ctx context.Context, rev, workDir string) (string, error) {
-	logrus.Infof("Retrieving modules of %s", rev)
-
-	err := runGit(ctx, workDir, "fetch", "--depth=1", "origin", rev)
-	if err != nil {
-		logrus.Error(err)
-
-		return "", err
-	}
-
-	err = runGit(ctx, workDir, "checkout", "-f", "FETCH_HEAD")
-	if err != nil {
-		logrus.Error(err)
-
-		return "", err
-	}
+func retrieveModules(ctx context.Context, workDir string) (string, error) {
+	logrus.Debugf("Listing modules in %s", workDir)
 
 	mods, err := runCmdOutput(ctx, workDir, "go", "list", "-mod=readonly", "-m", "all")
 	if err != nil {

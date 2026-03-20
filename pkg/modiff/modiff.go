@@ -1,3 +1,5 @@
+// Package modiff provides functionality to diff Go module dependencies
+// between two git revisions of a repository.
 package modiff
 
 import (
@@ -15,6 +17,45 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	// gitHubPathSegments is the number of path segments in a standard
+	// GitHub module path (e.g. github.com/owner/repo).
+	gitHubPathSegments = 3
+
+	// gitHubSubpathSegments is the number of path segments when a module
+	// has an additional sub-path (e.g. github.com/owner/repo/subpath).
+	gitHubSubpathSegments = 4
+
+	// minModuleFields is the minimum number of fields expected when
+	// parsing a go list module line (name + version).
+	minModuleFields = 2
+
+	// localRewriteFields is the number of fields for a local rewrite
+	// without a version (e.g. "mod => ../local").
+	localRewriteFields = 4
+
+	// fullRewriteFields is the number of fields for a rewrite with
+	// a version (e.g. "old v1 => new v2").
+	fullRewriteFields = 5
+
+	// minPseudoVersionParts is the minimum number of dash-separated
+	// parts in a pseudo-version string.
+	minPseudoVersionParts = 3
+
+	// shortHashLength is the length used to truncate pseudo-version
+	// commit hashes for display.
+	shortHashLength = 7
+
+	// maxHeaderLevel is the maximum markdown header level (h6).
+	maxHeaderLevel = 6
+)
+
+var (
+	errNilConfig    = errors.New("config is nil")
+	errNoRepository = errors.New("repository is required")
+	errSameFromTo   = errors.New("no diff possible if `from` equals `to`")
+)
+
 type entry struct {
 	beforeVersion string
 	afterVersion  string
@@ -23,7 +64,7 @@ type entry struct {
 
 type modules = map[string]entry
 
-// Config is the structure passed to `Run`
+// Config is the structure passed to `Run`.
 type Config struct {
 	repository  string
 	from        string
@@ -32,48 +73,50 @@ type Config struct {
 	headerLevel uint
 }
 
-// NewConfig creates a new configuration
+// NewConfig creates a new configuration.
 func NewConfig(repository, from, to string, link bool, headerLevel uint) *Config {
 	return &Config{repository, from, to, link, headerLevel}
 }
 
-// Run starts go modiff and returns the markdown string
-func Run(config *Config) (string, error) {
-	// Enable to modules
-	os.Setenv("GO111MODULE", "on")
-
+// Run starts go modiff and returns the markdown string.
+func Run(ctx context.Context, config *Config) (string, error) {
 	if config == nil {
-		return logErr("cli context is nil")
-	}
-	// Validate the flags
-	if config.repository == "" {
-		return logErr("repository is required")
-	}
-	if config.from == config.to {
-		return logErr("no diff possible if `from` equals `to`")
+		return logErr(errNilConfig)
 	}
 
-	// Prepare the environment
+	if config.repository == "" {
+		return logErr(errNoRepository)
+	}
+
+	if config.from == config.to {
+		return logErr(errSameFromTo)
+	}
+
 	dir, err := os.MkdirTemp("", "go-modiff")
 	if err != nil {
 		return logErr(err)
 	}
-	defer os.RemoveAll(dir)
+
+	defer func() {
+		err := os.RemoveAll(dir)
+		if err != nil {
+			logrus.Errorf("Failed to remove temp dir: %v", err)
+		}
+	}()
 
 	logrus.Infof("Setting up repository %s", config.repository)
 
-	if err := runGit(dir, "init"); err != nil {
+	err = runGit(ctx, dir, "init")
+	if err != nil {
 		return logErr(err)
 	}
 
-	if err := runGit(
-		dir, "remote", "add", "origin", toURL(config.repository),
-	); err != nil {
+	err = runGit(ctx, dir, "remote", "add", "origin", toURL(config.repository))
+	if err != nil {
 		return logErr(err)
 	}
 
-	// Retrieve and diff the modules
-	mods, err := getModules(dir, config.from, config.to)
+	mods, err := getModules(ctx, dir, config.from, config.to)
 	if err != nil {
 		return "", err
 	}
@@ -93,60 +136,84 @@ func sanitizeTag(tag string) string {
 	return strings.TrimSuffix(tag, "+incompatible")
 }
 
-func logErr(msg interface{}) (string, error) {
-	err := fmt.Errorf("%v", msg)
+func logErr(err error) (string, error) {
 	logrus.Error(err)
 
 	return "", err
 }
 
+func buildTreeLink(splitPrefix []string, version string) string {
+	prefixWithTree := strings.Join(splitPrefix, "/") + "/tree"
+	if len(splitPrefix) >= gitHubPathSegments {
+		prefixWithTree = strings.Join(slices.Insert(splitPrefix, gitHubPathSegments, "tree"), "/")
+	}
+
+	return fmt.Sprintf("[%s](%s/%s)", version, toURL(prefixWithTree), sanitizeTag(version))
+}
+
+func buildCompareLink(mod entry, splitLinkPrefix []string) string {
+	prefixWithCompare := fmt.Sprintf("%s/%s", mod.linkPrefix, "compare")
+	afterVersion := sanitizeTag(mod.afterVersion)
+
+	if len(splitLinkPrefix) > gitHubPathSegments {
+		prefixWithCompare = strings.Join(slices.Insert(splitLinkPrefix, gitHubPathSegments, "compare"), "/")
+		afterVersion = fmt.Sprintf("%s/%s", strings.Join(splitLinkPrefix[gitHubPathSegments:], "/"), afterVersion)
+	}
+
+	return fmt.Sprintf("[%s → %s](%s/%s...%s)",
+		mod.beforeVersion, mod.afterVersion, toURL(prefixWithCompare),
+		sanitizeTag(mod.beforeVersion), afterVersion)
+}
+
+func classifyModule(mod entry, name string, addLinks bool) (string, string) {
+	txt := fmt.Sprintf("- %s: ", name)
+	splitLinkPrefix := strings.Split(mod.linkPrefix, "/")
+
+	if mod.beforeVersion == "" { //nolint:gocritic // if-else chain is clearer here
+		if addLinks && isGitHubURL(mod.linkPrefix) {
+			txt += buildTreeLink(splitLinkPrefix, mod.afterVersion)
+		} else {
+			txt += mod.afterVersion
+		}
+
+		return "added", txt
+	} else if mod.afterVersion == "" {
+		if addLinks && isGitHubURL(mod.linkPrefix) {
+			txt += buildTreeLink(splitLinkPrefix, mod.beforeVersion)
+		} else {
+			txt += mod.beforeVersion
+		}
+
+		return "removed", txt
+	} else if mod.beforeVersion != mod.afterVersion {
+		if addLinks && isGitHubURL(mod.linkPrefix) {
+			txt += buildCompareLink(mod, splitLinkPrefix)
+		} else {
+			txt += fmt.Sprintf("%s → %s", mod.beforeVersion, mod.afterVersion)
+		}
+
+		return "changed", txt
+	}
+
+	return "", ""
+}
+
 func diffModules(mods modules, addLinks bool, headerLevel uint) string {
 	var added, removed, changed []string
+
 	for name, mod := range mods {
-		txt := fmt.Sprintf("- %s: ", name)
-		splitLinkPrefix := strings.Split(mod.linkPrefix, "/")
-		prefixWithTree := fmt.Sprintf("%s/%s", mod.linkPrefix, "tree")
-		if mod.beforeVersion == "" { //nolint: gocritic
-			if addLinks && isGitHubURL(mod.linkPrefix) {
-				// Insert the tree part of the URL at index 3 to account for tag names with slashes
-				if len(splitLinkPrefix) >= 3 {
-					prefixWithTree = strings.Join(slices.Insert(splitLinkPrefix, 3, "tree"), "/")
-				}
-				txt += fmt.Sprintf("[%s](%s/%s)",
-					mod.afterVersion, toURL(prefixWithTree), sanitizeTag(mod.afterVersion))
-			} else {
-				txt += mod.afterVersion
-			}
+		category, txt := classifyModule(mod, name, addLinks)
+
+		switch category {
+		case "added":
 			added = append(added, txt)
-		} else if mod.afterVersion == "" {
-			if addLinks && isGitHubURL(mod.linkPrefix) {
-				if len(splitLinkPrefix) >= 3 {
-					prefixWithTree = strings.Join(slices.Insert(splitLinkPrefix, 3, "tree"), "/")
-				}
-				txt += fmt.Sprintf("[%s](%s/%s)",
-					mod.beforeVersion, toURL(prefixWithTree), sanitizeTag(mod.beforeVersion))
-			} else {
-				txt += mod.beforeVersion
-			}
+		case "removed":
 			removed = append(removed, txt)
-		} else if mod.beforeVersion != mod.afterVersion {
-			if addLinks && isGitHubURL(mod.linkPrefix) {
-				prefixWithCompare := fmt.Sprintf("%s/%s", mod.linkPrefix, "compare")
-				// Insert tag prefix to the afterVersion to account for tag names with slashes
-				afterVersion := sanitizeTag(mod.afterVersion)
-				if len(splitLinkPrefix) > 3 {
-					prefixWithCompare = strings.Join(slices.Insert(splitLinkPrefix, 3, "compare"), "/")
-					afterVersion = fmt.Sprintf("%s/%s", strings.Join(splitLinkPrefix[3:], "/"), afterVersion)
-				}
-				txt += fmt.Sprintf("[%s → %s](%s/%s...%s)",
-					mod.beforeVersion, mod.afterVersion, toURL(prefixWithCompare),
-					sanitizeTag(mod.beforeVersion), afterVersion)
-			} else {
-				txt += fmt.Sprintf("%s → %s", mod.beforeVersion, mod.afterVersion)
-			}
+		case "changed":
 			changed = append(changed, txt)
 		}
 	}
+
 	sort.Strings(added)
 	sort.Strings(changed)
 	sort.Strings(removed)
@@ -154,16 +221,23 @@ func diffModules(mods modules, addLinks bool, headerLevel uint) string {
 	logrus.Infof("%d modules changed", len(changed))
 	logrus.Infof("%d modules removed", len(removed))
 
-	// Pretty print
+	return formatMarkdown(added, changed, removed, headerLevel)
+}
+
+func formatMarkdown(added, changed, removed []string, headerLevel uint) string {
+	level := min(headerLevel, maxHeaderLevel)
 	builder := &strings.Builder{}
+
 	fmt.Fprintf(
-		builder, "%s Dependencies\n", strings.Repeat("#", int(headerLevel)),
+		builder, "%s Dependencies\n", strings.Repeat("#", int(level)), //nolint:gosec // level is clamped to maxHeaderLevel
 	)
-	forEach := func(section string, input []string) {
+
+	writeSection := func(section string, input []string) {
 		fmt.Fprintf(
 			builder,
-			"\n%s %s\n", strings.Repeat("#", int(headerLevel)+1), section,
+			"\n%s %s\n", strings.Repeat("#", int(level)+1), section, //nolint:gosec // level is clamped to maxHeaderLevel
 		)
+
 		if len(input) > 0 {
 			for _, mod := range input {
 				fmt.Fprintf(builder, "%s\n", mod)
@@ -172,134 +246,162 @@ func diffModules(mods modules, addLinks bool, headerLevel uint) string {
 			builder.WriteString("_Nothing has changed._\n")
 		}
 	}
-	forEach("Added", added)
-	forEach("Changed", changed)
-	forEach("Removed", removed)
+
+	writeSection("Added", added)
+	writeSection("Changed", changed)
+	writeSection("Removed", removed)
 
 	return builder.String()
 }
 
-func getModules(workDir, from, to string) (modules, error) {
-	// Retrieve all modules
-	before, err := retrieveModules(from, workDir)
-	if err != nil {
-		return nil, err
-	}
-	after, err := retrieveModules(to, workDir)
-	if err != nil {
-		return nil, err
+func resolveLinkPrefix(ctx context.Context, name, version string) string {
+	linkPrefix := name
+
+	splitLink := strings.Split(linkPrefix, "/")
+	if len(splitLink) != gitHubSubpathSegments {
+		return linkPrefix
 	}
 
-	// Parse the modules
-	res := modules{}
-	forEach := func(input string, do func(res *entry, version string)) {
-		scanner := bufio.NewScanner(strings.NewReader(input))
-		for scanner.Scan() {
-			// Skip version-less modules, like the local one
-			split := strings.Split(scanner.Text(), " ")
-			if len(split) < 2 {
-				continue
-			}
-			// Rewrites have to be handled differently
-			if len(split) > 2 && split[2] == "=>" {
-				// Local rewrites without any version will be skipped
-				if len(split) == 4 {
-					continue
-				}
+	// Check if the last part of the string is part of the tag.
+	linkPrefixTree := strings.Join(slices.Insert(splitLink, gitHubPathSegments, "tree"), "/")
+	checkURL := fmt.Sprintf("https://%s/%s", linkPrefixTree, strings.TrimSpace(version))
 
-				// Use the rewritten version and name if available
-				if len(split) == 5 {
-					split[0] = split[3]
-					split[1] = split[4]
-				}
-			}
+	client := http.Client{} //nolint:exhaustruct // zero value client is intentional
+	valid, err := CheckURLValid(ctx, client, checkURL)
 
-			name := strings.TrimSpace(split[0])
-			linkPrefix := name
-			// Remove the module name from the link
-			if splitLink := strings.Split(linkPrefix, "/"); len(splitLink) == 4 {
-				// Check if the last part of string is part of the tag.
-				linkPrefixTree := strings.Join(slices.Insert(splitLink, 3, "tree"), "/")
-				url := fmt.Sprintf("https://%s%s%s", linkPrefixTree, "/", strings.TrimSpace(split[1]))
-				// If the url is valid, then we keep the linkPrefix as is
-				client := http.Client{}
-				if valid, err := CheckURLValid(client, url); !valid && err == nil {
-					linkPrefix = strings.Join(splitLink[:3], "/")
-				}
-			}
-			version := strings.TrimSpace(split[1])
-
-			// Prettify pseudo versions
-			vSplit := strings.Split(version, "-")
-			if len(vSplit) > 2 {
-				v := vSplit[len(vSplit)-1]
-				if len(v) > 7 {
-					version = v[:7]
-				} else {
-					// This should never happen but who knows what go modules
-					// will do next
-					version = v
-				}
-			}
-
-			// Process the entry
-			entry := &entry{}
-			if val, ok := res[name]; ok {
-				entry = &val
-			}
-			do(entry, version)
-			entry.linkPrefix = linkPrefix
-			res[name] = *entry
-		}
+	if !valid && err == nil {
+		linkPrefix = strings.Join(splitLink[:gitHubPathSegments], "/")
 	}
-	forEach(before, func(res *entry, v string) { res.beforeVersion = v })
-	forEach(after, func(res *entry, v string) { res.afterVersion = v })
 
-	logrus.Infof("%d modules found", len(res))
-
-	return res, nil
+	return linkPrefix
 }
 
-func CheckURLValid(client http.Client, url string) (bool, error) {
-	ctx := context.Background()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+func prettifyVersion(version string) string {
+	versionSplit := strings.Split(version, "-")
+	if len(versionSplit) < minPseudoVersionParts {
+		return version
+	}
+
+	hash := versionSplit[len(versionSplit)-1]
+	if len(hash) > shortHashLength {
+		return hash[:shortHashLength]
+	}
+
+	// This should never happen but who knows what go modules will do next.
+	return hash
+}
+
+func parseModuleLine(ctx context.Context, line string) (string, string, string, bool) {
+	split := strings.Split(line, " ")
+	if len(split) < minModuleFields {
+		return "", "", "", false
+	}
+
+	// Rewrites have to be handled differently.
+	if len(split) > minModuleFields && split[2] == "=>" {
+		// Local rewrites without any version will be skipped.
+		if len(split) == localRewriteFields {
+			return "", "", "", false
+		}
+
+		// Use the rewritten version and name if available.
+		if len(split) == fullRewriteFields {
+			split[0] = split[3]
+			split[1] = split[4]
+		}
+	}
+
+	modName := strings.TrimSpace(split[0])
+	modLinkPrefix := resolveLinkPrefix(ctx, modName, split[1])
+	modVersion := prettifyVersion(strings.TrimSpace(split[1]))
+
+	return modName, modLinkPrefix, modVersion, true
+}
+
+func getModules(ctx context.Context, workDir, fromRev, toRev string) (modules, error) {
+	before, err := retrieveModules(ctx, fromRev, workDir)
+	if err != nil {
+		return nil, err
+	}
+
+	after, err := retrieveModules(ctx, toRev, workDir)
+	if err != nil {
+		return nil, err
+	}
+
+	result := modules{}
+
+	parseInto := func(input string, apply func(result *entry, version string)) {
+		scanner := bufio.NewScanner(strings.NewReader(input))
+		for scanner.Scan() {
+			name, linkPrefix, version, ok := parseModuleLine(ctx, scanner.Text())
+			if !ok {
+				continue
+			}
+
+			modEntry := new(entry)
+			if existing, found := result[name]; found {
+				modEntry = &existing
+			}
+
+			apply(modEntry, version)
+			modEntry.linkPrefix = linkPrefix
+			result[name] = *modEntry
+		}
+	}
+
+	parseInto(before, func(result *entry, version string) { result.beforeVersion = version })
+	parseInto(after, func(result *entry, version string) { result.afterVersion = version })
+
+	logrus.Infof("%d modules found", len(result))
+
+	return result, nil
+}
+
+// CheckURLValid checks whether the given URL returns a valid (non-404) response.
+func CheckURLValid(ctx context.Context, client http.Client, targetURL string) (bool, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, targetURL, http.NoBody)
 	if err != nil {
 		return false, fmt.Errorf("error while creating request: %w", err)
 	}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return false, fmt.Errorf("error while sending request: %w", err)
-	} else if resp.StatusCode == http.StatusNotFound {
-		resp.Body.Close()
+	}
 
+	defer func() {
+		closeErr := resp.Body.Close()
+		if closeErr != nil {
+			logrus.Errorf("Failed to close response body: %v", closeErr)
+		}
+	}()
+
+	if resp.StatusCode == http.StatusNotFound {
 		return false, nil
 	}
-	resp.Body.Close()
 
 	return true, nil
 }
 
-func retrieveModules(rev, workDir string) (string, error) {
+func retrieveModules(ctx context.Context, rev, workDir string) (string, error) {
 	logrus.Infof("Retrieving modules of %s", rev)
-	if err := runGit(
-		workDir, "fetch", "--depth=1", "origin", rev,
-	); err != nil {
+
+	err := runGit(ctx, workDir, "fetch", "--depth=1", "origin", rev)
+	if err != nil {
 		logrus.Error(err)
 
 		return "", err
 	}
 
-	if err := runGit(
-		workDir, "checkout", "-f", "FETCH_HEAD",
-	); err != nil {
+	err = runGit(ctx, workDir, "checkout", "-f", "FETCH_HEAD")
+	if err != nil {
 		logrus.Error(err)
 
 		return "", err
 	}
 
-	mods, err := runCmdOutput(
-		workDir, "go", "list", "-mod=readonly", "-m", "all",
-	)
+	mods, err := runCmdOutput(ctx, workDir, "go", "list", "-mod=readonly", "-m", "all")
 	if err != nil {
 		logrus.Error(err)
 
@@ -309,24 +411,26 @@ func retrieveModules(rev, workDir string) (string, error) {
 	return strings.TrimSpace(string(mods)), nil
 }
 
-func runGit(dir string, args ...string) error {
-	return runCmd(dir, "git", args...)
+func runGit(ctx context.Context, dir string, args ...string) error {
+	return runCmd(ctx, dir, "git", args...)
 }
 
-func runCmd(dir, cmd string, args ...string) error {
-	_, err := runCmdOutput(dir, cmd, args...)
+func runCmd(ctx context.Context, dir, cmd string, args ...string) error {
+	_, err := runCmdOutput(ctx, dir, cmd, args...)
 
 	return err
 }
 
-func runCmdOutput(dir, cmd string, args ...string) ([]byte, error) {
-	c := exec.Command(cmd, args...)
-	c.Stderr = nil
-	c.Dir = dir
+func runCmdOutput(ctx context.Context, dir, cmd string, args ...string) ([]byte, error) {
+	//nolint:gosec // cmd is always controlled internally
+	command := exec.CommandContext(ctx, cmd, args...)
+	command.Stderr = nil
+	command.Dir = dir
 
-	output, err := c.Output()
+	output, err := command.Output()
 	if err != nil {
 		var exitError *exec.ExitError
+
 		stderr := []byte{}
 		if errors.As(err, &exitError) {
 			stderr = exitError.Stderr

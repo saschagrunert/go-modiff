@@ -1,13 +1,15 @@
+// Package main provides the go-modiff CLI entry point.
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
-	"github.com/saschagrunert/ccli"
+	ccli "github.com/saschagrunert/ccli/v3"
 	"github.com/saschagrunert/go-modiff/pkg/modiff"
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 )
 
 const (
@@ -16,41 +18,51 @@ const (
 	toArg          = "to"
 	linkArg        = "link"
 	headerLevelArg = "header-level"
+	debugFlag      = "debug"
 )
 
 func main() {
-	const debugFlag = "debug"
+	app := buildApp()
 
-	app := ccli.NewApp()
+	err := app.Run(context.Background(), os.Args)
+	if err != nil {
+		os.Exit(1)
+	}
+}
+
+func buildApp() *cli.Command {
+	app := ccli.NewCommand()
 	app.Name = "go-modiff"
 	app.Version = "1.3.1"
-	app.Authors = []*cli.Author{
-		{Name: "Sascha Grunert", Email: "mail@saschagrunert.de"},
-	}
+	app.Authors = []any{"Sascha Grunert <mail@saschagrunert.de>"}
 	app.Usage = "Command line tool for diffing go module " +
 		"dependency changes between versions"
 	app.UsageText = app.Usage
-	app.UseShortOptionHandling = true
-	app.Flags = []cli.Flag{
+	app.Flags = buildFlags()
+	app.Commands = buildCommands()
+	app.Action = run
+
+	return app
+}
+
+func buildFlags() []cli.Flag {
+	return []cli.Flag{
 		&cli.StringFlag{
-			Name:      repositoryArg,
-			Aliases:   []string{"r"},
-			Usage:     "repository to be used, like: github.com/owner/repo",
-			TakesFile: false,
+			Name:    repositoryArg,
+			Aliases: []string{"r"},
+			Usage:   "repository to be used, like: github.com/owner/repo",
 		},
 		&cli.StringFlag{
-			Name:      fromArg,
-			Aliases:   []string{"f"},
-			Value:     "master",
-			Usage:     "the start of the comparison, any valid git rev",
-			TakesFile: false,
+			Name:    fromArg,
+			Aliases: []string{"f"},
+			Value:   "master",
+			Usage:   "the start of the comparison, any valid git rev",
 		},
 		&cli.StringFlag{
-			Name:      toArg,
-			Aliases:   []string{"t"},
-			Value:     "master",
-			Usage:     "the end of the comparison, any valid git rev",
-			TakesFile: false,
+			Name:    toArg,
+			Aliases: []string{"t"},
+			Value:   "master",
+			Usage:   "the end of the comparison, any valid git rev",
 		},
 		&cli.BoolFlag{
 			Name:    linkArg,
@@ -69,81 +81,62 @@ func main() {
 			Usage:   "enable debug output",
 		},
 	}
-	app.Commands = []*cli.Command{{
-		Name:    "docs",
-		Aliases: []string{"d"},
-		Action:  docs,
-		Usage: "generate the markdown or man page documentation " +
-			"and print it to stdout",
-		Flags: []cli.Flag{
-			&cli.BoolFlag{
-				Name:  "markdown",
-				Usage: "print the markdown version",
-			},
-			&cli.BoolFlag{
-				Name:  "man",
-				Usage: "print the man version",
-			},
+}
+
+func buildCommands() []*cli.Command {
+	return []*cli.Command{
+		{
+			Name:    "fish",
+			Aliases: []string{"f"},
+			Action:  fish,
+			Usage:   "generate the fish shell completion",
 		},
-	}, {
-		Name:    "fish",
-		Aliases: []string{"f"},
-		Action:  fish,
-		Usage:   "generate the fish shell completion",
-	}}
-	app.Action = func(c *cli.Context) error {
-		// Init the logging facade
-		logrus.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true})
-		if c.Bool("debug") {
-			logrus.SetLevel(logrus.DebugLevel)
-			logrus.Debug("Enabled debug output")
-		} else {
-			logrus.SetLevel(logrus.InfoLevel)
-		}
-
-		// Run modiff
-		config := modiff.NewConfig(
-			c.String(repositoryArg),
-			c.String(fromArg),
-			c.String(toArg),
-			c.Bool(linkArg),
-			c.Uint(headerLevelArg),
-		)
-		res, err := modiff.Run(config)
-		if err != nil {
-			return fmt.Errorf("unable to run: %w", err)
-		}
-		logrus.Info("Done, the result will be printed to `stdout`")
-		fmt.Print(res)
-
-		return nil
-	}
-	if err := app.Run(os.Args); err != nil {
-		os.Exit(1)
 	}
 }
 
-func docs(c *cli.Context) (err error) {
-	res := ""
-	if c.Bool("markdown") {
-		res, err = c.App.ToMarkdown()
-	} else if c.Bool("man") {
-		res, err = c.App.ToMan()
+func run(ctx context.Context, cmd *cli.Command) error {
+	logrus.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true})
+
+	if cmd.Bool(debugFlag) {
+		logrus.SetLevel(logrus.DebugLevel)
+		logrus.Debug("Enabled debug output")
+	} else {
+		logrus.SetLevel(logrus.InfoLevel)
 	}
+
+	config := modiff.NewConfig(
+		cmd.String(repositoryArg),
+		cmd.String(fromArg),
+		cmd.String(toArg),
+		cmd.Bool(linkArg),
+		cmd.Uint(headerLevelArg),
+	)
+
+	result, err := modiff.Run(ctx, config)
 	if err != nil {
-		return fmt.Errorf("unable to run docs cmd: %w", err)
+		return fmt.Errorf("unable to run: %w", err)
 	}
-	fmt.Printf("%v\n", res)
+
+	logrus.Info("Done, the result will be printed to `stdout`")
+
+	_, err = os.Stdout.WriteString(result)
+	if err != nil {
+		return fmt.Errorf("unable to write result: %w", err)
+	}
 
 	return nil
 }
 
-func fish(c *cli.Context) (err error) {
-	res, err := c.App.ToFishCompletion()
+func fish(_ context.Context, cmd *cli.Command) error {
+	result, err := cmd.Root().ToFishCompletion()
 	if err != nil {
-		return fmt.Errorf("unable to run completions cmd: %w", err)
+		return fmt.Errorf("unable to generate completions: %w", err)
 	}
-	fmt.Printf("%v", res)
+
+	_, err = os.Stdout.WriteString(result)
+	if err != nil {
+		return fmt.Errorf("unable to write completions: %w", err)
+	}
 
 	return nil
 }

@@ -1,221 +1,155 @@
 ---
+version: "2"
 run:
   concurrency: 6
-  deadline: 5m
+  timeout: 5m
 linters:
-  disable-all: true
   enable:
+    - arangolint
     - asasalint
     - asciicheck
     - bidichk
     - bodyclose
+    - canonicalheader
     - containedctx
     - contextcheck
+    - copyloopvar
+    - cyclop
     - decorder
+    - depguard
     - dogsled
     - dupl
     - dupword
     - durationcheck
+    - embeddedstructfieldcheck
+    - err113
     - errcheck
     - errchkjson
     - errname
     - errorlint
-    - execinquery
     - exhaustive
-    - exportloopref
+    - exhaustruct
+    - exptostd
+    - fatcontext
+    - forbidigo
     - forcetypeassert
-    - gci
+    - funcorder
+    - funlen
     - ginkgolinter
     - gocheckcompilerdirectives
     - gochecknoglobals
     - gochecknoinits
+    - gochecksumtype
     - gocognit
     - goconst
     - gocritic
     - gocyclo
+    - godoclint
+    - godot
     - godox
-    - gofmt
-    - gofumpt
     - goheader
-    - goimports
     - gomoddirectives
     - gomodguard
     - goprintffuncname
     - gosec
-    - gosimple
+    - gosmopolitan
     - govet
     - grouper
+    - iface
     - importas
+    - inamedparam
     - ineffassign
     - interfacebloat
+    - intrange
+    - iotamixing
     - ireturn
     - lll
     - loggercheck
     - maintidx
     - makezero
+    - mirror
     - misspell
+    - mnd
+    - modernize
     - musttag
     - nakedret
     - nestif
     - nilerr
+    - nilnesserr
     - nilnil
     - nlreturn
     - noctx
+    - noinlineerr
     - nolintlint
+    - nonamedreturns
     - nosprintfhostport
     - paralleltest
+    - perfsprint
     - prealloc
     - predeclared
     - promlinter
+    - protogetter
     - reassign
+    - recvcheck
     - revive
     - rowserrcheck
+    - sloglint
+    - spancheck
     - sqlclosecheck
     - staticcheck
-    - stylecheck
+    - tagalign
     - tagliatelle
-    - tenv
     - testableexamples
+    - testifylint
     - testpackage
     - thelper
     - tparallel
-    - typecheck
     - unconvert
     - unparam
+    - unqueryvet
     - unused
     - usestdlibvars
+    - usetesting
+    - varnamelen
     - wastedassign
     - whitespace
     - wrapcheck
-    # - cyclop
-    # - depguard
-    # - exhaustruct
-    # - forbidigo
-    # - funlen
-    # - godot
-    # - goerr113
-    # - gomnd
-    # - nonamedreturns
-    # - varnamelen
-    # - wsl
-linters-settings:
-  gocognit:
-    min-complexity: 40
-  nestif:
-    min-complexity: 15
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-  godox:
-    keywords:
-      - BUG
-      - FIXME
-      - HACK
-  gocritic:
-    enabled-checks:
-      - appendAssign
-      - appendCombine
-      - argOrder
-      - assignOp
-      - badCall
-      - badCond
-      - badLock
-      - badRegexp
-      - badSorting
-      - boolExprSimplify
-      - builtinShadow
-      - builtinShadowDecl
-      - captLocal
-      - caseOrder
-      - codegenComment
-      - commentFormatting
-      - commentedOutCode
-      - commentedOutImport
-      - defaultCaseOrder
-      - deferInLoop
-      - deferUnlambda
-      - deprecatedComment
-      - docStub
-      - dupArg
-      - dupBranchBody
-      - dupCase
-      - dupImport
-      - dupSubExpr
-      - dynamicFmtString
-      - elseif
-      - emptyDecl
-      - emptyFallthrough
-      - emptyStringTest
-      - equalFold
-      - evalOrder
-      - exitAfterDefer
-      - exposedSyncMutex
-      - externalErrorReassign
-      - filepathJoin
-      - flagDeref
-      - flagName
-      - hexLiteral
-      - httpNoBody
-      - hugeParam
-      - ifElseChain
-      - importShadow
-      - indexAlloc
-      - initClause
-      - mapKey
-      - methodExprCall
-      - nestingReduce
-      - newDeref
-      - nilValReturn
-      - octalLiteral
-      - offBy1
-      - paramTypeCombine
-      - preferDecodeRune
-      - preferFilepathJoin
-      - preferFprint
-      - preferStringWriter
-      - preferWriteByte
-      - ptrToRefParam
-      - rangeExprCopy
-      - rangeValCopy
-      - redundantSprint
-      - regexpMust
-      - regexpPattern
-      - regexpSimplify
-      - returnAfterHttpError
-      - ruleguard
-      - singleCaseSwitch
-      - sliceClear
-      - sloppyLen
-      - sloppyReassign
-      - sloppyTestFuncName
-      - sloppyTypeAssert
-      - sortSlice
-      - sprintfQuotedString
-      - sqlQuery
-      - stringConcatSimplify
-      - stringXbytes
-      - stringsCompare
-      - switchTrue
-      - syncMapLoadAndDelete
-      - timeCmpSimplify
-      - timeExprSimplify
-      - todoCommentWithoutDetail
-      - tooManyResultsChecker
-      - truncateCmp
-      - typeAssertChain
-      - typeDefFirst
-      - typeSwitchVar
-      - typeUnparen
-      - uncheckedInlineErr
-      - underef
-      - unlabelStmt
-      - unlambda
-      - unnamedResult
-      - unnecessaryBlock
-      - unnecessaryDefer
-      - unslice
-      - valSwap
-      - weakCond
-      - whyNoLint
-      - wrapperFunc
-      - yodaStyleExpr
+    - wsl_v5
+    - zerologlint
+  settings:
+    cyclop:
+      max-complexity: 15
+    depguard:
+      rules:
+        main:
+          deny:
+            - pkg: io/ioutil
+              desc: use os and io packages instead
+    errcheck:
+      check-blank: true
+      check-type-assertions: true
+    exhaustruct:
+      exclude:
+        - 'github\.com/urfave/cli/v3\.FlagBase'
+        - 'github\.com/sirupsen/logrus\.TextFormatter'
+    funlen:
+      lines: 80
+      statements: 50
+    gocognit:
+      min-complexity: 40
+    gocritic:
+      enable-all: true
+      disabled-checks:
+        # Conflicts with the nonamedreturns linter.
+        - unnamedResult
+    godox:
+      keywords:
+        - BUG
+        - FIXME
+        - HACK
+    nestif:
+      min-complexity: 15
+formatters:
+  enable:
+    - gofumpt
+    - goimports

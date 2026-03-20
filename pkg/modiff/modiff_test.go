@@ -2,7 +2,8 @@ package modiff_test
 
 //nolint:revive // test file
 import (
-	"fmt"
+	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,8 +14,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// The actual test suite
-var _ = t.Describe("Run", func() {
+// The actual test suite.
+var _ = testFramework.Describe("Run", func() {
 	const expected = `# Dependencies
 
 ## Added
@@ -48,8 +49,8 @@ _Nothing has changed._
 
 	const (
 		repo    = "github.com/saschagrunert/go-modiff"
-		from    = "v0.10.0"
-		to      = "v0.11.0"
+		fromRev = "v0.10.0"
+		toRev   = "v0.11.0"
 		badRepo = "github.com/saschagrunert/go-modiff-invalid"
 	)
 
@@ -59,10 +60,10 @@ _Nothing has changed._
 
 	It("should succeed", func() {
 		// Given
-		config := modiff.NewConfig(repo, from, to, false, 1)
+		config := modiff.NewConfig(repo, fromRev, toRev, false, 1)
 
 		// When
-		res, err := modiff.Run(config)
+		res, err := modiff.Run(context.Background(), config)
 
 		// Then
 		Expect(err).ToNot(HaveOccurred())
@@ -71,10 +72,10 @@ _Nothing has changed._
 
 	It("should succeed with links", func() {
 		// Given
-		config := modiff.NewConfig(repo, from, to, true, 1)
+		config := modiff.NewConfig(repo, fromRev, toRev, true, 1)
 
 		// When
-		res, err := modiff.Run(config)
+		res, err := modiff.Run(context.Background(), config)
 
 		// Then
 		Expect(err).ToNot(HaveOccurred())
@@ -84,7 +85,7 @@ _Nothing has changed._
 	It("should fail if context is nil", func() {
 		// Given
 		// When
-		res, err := modiff.Run(nil)
+		res, err := modiff.Run(context.Background(), nil)
 
 		// Then
 		Expect(err).To(HaveOccurred())
@@ -93,10 +94,10 @@ _Nothing has changed._
 
 	It("should fail if 'repository' not given", func() {
 		// Given
-		config := modiff.NewConfig("", from, to, true, 1)
+		config := modiff.NewConfig("", fromRev, toRev, true, 1)
 
 		// When
-		res, err := modiff.Run(config)
+		res, err := modiff.Run(context.Background(), config)
 
 		// Then
 		Expect(err).To(HaveOccurred())
@@ -108,7 +109,7 @@ _Nothing has changed._
 		config := modiff.NewConfig(repo, "", "", true, 1)
 
 		// When
-		res, err := modiff.Run(config)
+		res, err := modiff.Run(context.Background(), config)
 
 		// Then
 		Expect(err).To(HaveOccurred())
@@ -117,10 +118,10 @@ _Nothing has changed._
 
 	It("should fail if repository is not clone-able", func() {
 		// Given
-		config := modiff.NewConfig("invalid", from, "", true, 1)
+		config := modiff.NewConfig("invalid", fromRev, "", true, 1)
 
 		// When
-		res, err := modiff.Run(config)
+		res, err := modiff.Run(context.Background(), config)
 
 		// Then
 		Expect(err).To(HaveOccurred())
@@ -129,10 +130,10 @@ _Nothing has changed._
 
 	It("should fail if the repository url is invalid", func() {
 		// Given
-		config := modiff.NewConfig(badRepo, from, to, true, 1)
+		config := modiff.NewConfig(badRepo, fromRev, toRev, true, 1)
 
 		// When
-		res, err := modiff.Run(config)
+		res, err := modiff.Run(context.Background(), config)
 
 		// Then
 		Expect(err).To(HaveOccurred())
@@ -140,57 +141,52 @@ _Nothing has changed._
 	})
 })
 
-func TestCheckURLValid(t *testing.T) {
-	t.Parallel()
+var errSending = errors.New("error while sending request: ")
 
-	tests := []struct {
-		name     string
-		url      string
-		expected bool
-		err      error
-		client   *http.Client
-	}{
-		{
-			name:     "Valid URL",
-			url:      "https://github.com/hashicorp/consul/compare/api/v1.18.0...api/v1.20.0",
-			expected: true,
-			err:      nil,
-		},
-		{
-			name:     "Invalid URL",
-			url:      "https://github.com/hashicorp/consul/compare/v1.18.0...v1.20.0",
-			expected: false,
-			err:      nil,
-		},
-		{
-			name:     "Request Sending Error",
-			url:      "invalid-url",
-			expected: false,
-			err:      fmt.Errorf("error while sending request: "),
-		},
-	}
+func TestCheckURLValid(test *testing.T) {
+	test.Parallel()
 
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			g := NewGomegaWithT(t)
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(http.StatusNotFound)
-			}))
-			defer server.Close()
+	test.Run("Valid URL", func(subTest *testing.T) {
+		subTest.Parallel()
 
-			if tt.client == nil {
-				tt.client = &http.Client{}
-			}
-			valid, err := modiff.CheckURLValid(*tt.client, tt.url)
-			g.Expect(valid).To(Equal(tt.expected))
-			if tt.err != nil {
-				g.Expect(err).To(HaveOccurred())
-				g.Expect(err.Error()).To(ContainSubstring(tt.err.Error()))
-			} else {
-				g.Expect(err).ToNot(HaveOccurred())
-			}
-		})
-	}
+		gomega := NewGomegaWithT(subTest)
+
+		server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+			writer.WriteHeader(http.StatusOK)
+		}))
+		defer server.Close()
+
+		client := &http.Client{} //nolint:exhaustruct // zero value is fine
+		valid, err := modiff.CheckURLValid(context.Background(), *client, server.URL)
+		gomega.Expect(err).ToNot(HaveOccurred())
+		gomega.Expect(valid).To(BeTrue())
+	})
+
+	test.Run("Invalid URL (404)", func(subTest *testing.T) {
+		subTest.Parallel()
+
+		gomega := NewGomegaWithT(subTest)
+
+		server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+			writer.WriteHeader(http.StatusNotFound)
+		}))
+		defer server.Close()
+
+		client := &http.Client{} //nolint:exhaustruct // zero value is fine
+		valid, err := modiff.CheckURLValid(context.Background(), *client, server.URL)
+		gomega.Expect(err).ToNot(HaveOccurred())
+		gomega.Expect(valid).To(BeFalse())
+	})
+
+	test.Run("Request Sending Error", func(subTest *testing.T) {
+		subTest.Parallel()
+
+		gomega := NewGomegaWithT(subTest)
+
+		client := &http.Client{} //nolint:exhaustruct // zero value is fine
+		valid, err := modiff.CheckURLValid(context.Background(), *client, "invalid-url")
+		gomega.Expect(err).To(HaveOccurred())
+		gomega.Expect(err.Error()).To(ContainSubstring(errSending.Error()))
+		gomega.Expect(valid).To(BeFalse())
+	})
 }

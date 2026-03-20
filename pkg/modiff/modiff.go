@@ -217,11 +217,10 @@ func Run(ctx context.Context, config *Config) (string, error) {
 	}
 
 	result := diffModules(ctx, mods, config)
+	applyFilter(&result, config.filter)
 
 	switch config.format {
 	case FormatJSON:
-		applyFilter(&result, config.filter)
-
 		return formatJSON(result)
 	default:
 		return formatMarkdown(result, config.link, config.headerLevel, config.filter), nil
@@ -229,7 +228,7 @@ func Run(ctx context.Context, config *Config) (string, error) {
 }
 
 // CheckURLValid checks whether the given URL returns a valid (non-404) response.
-func CheckURLValid(ctx context.Context, client http.Client, targetURL string) (bool, error) {
+func CheckURLValid(ctx context.Context, client *http.Client, targetURL string) (bool, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodHead, targetURL, http.NoBody)
 	if err != nil {
 		return false, fmt.Errorf("error while creating request: %w", err)
@@ -542,7 +541,11 @@ func diffModules(ctx context.Context, mods modules, config *Config) DiffResult {
 
 		for name, mod := range mods {
 			waitGrp.Go(func() {
-				semaphore <- struct{}{}
+				select {
+				case semaphore <- struct{}{}:
+				case <-ctx.Done():
+					return
+				}
 
 				beforeInfo, afterInfo := fetchModInfoPair(ctx, client, name, mod)
 
@@ -807,9 +810,7 @@ func retrieveModules(ctx context.Context, workDir string) (string, error) {
 
 	mods, err := runCmdOutput(ctx, workDir, "go", "list", "-mod=readonly", "-m", "all")
 	if err != nil {
-		logrus.Error(err)
-
-		return "", err
+		return "", fmt.Errorf("listing modules in %s: %w", workDir, err)
 	}
 
 	return strings.TrimSpace(string(mods)), nil

@@ -59,7 +59,7 @@ test: $(GINKGO)
 		--output-dir $(COVERAGE_PATH) \
 		--coverprofile coverprofile \
 		--junit-report junit.xml \
-		--slow-spec-threshold 60s \
+		--poll-progress-after 60s \
 		--trace \
 		--succinct
 	$(GO) tool cover -html=$(COVERAGE_PATH)/coverprofile -o $(COVERAGE_PATH)/coverage.html

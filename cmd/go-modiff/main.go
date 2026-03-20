@@ -18,6 +18,9 @@ const (
 	toArg          = "to"
 	linkArg        = "link"
 	headerLevelArg = "header-level"
+	formatArg      = "format"
+	filterArg      = "filter"
+	concurrencyArg = "concurrency"
 	debugFlag      = "debug"
 )
 
@@ -33,7 +36,7 @@ func main() {
 func buildApp() *cli.Command {
 	app := ccli.NewCommand()
 	app.Name = "go-modiff"
-	app.Version = "1.3.1"
+	app.Version = "1.4.0"
 	app.Authors = []any{"Sascha Grunert <mail@saschagrunert.de>"}
 	app.Usage = "Command line tool for diffing go module " +
 		"dependency changes between versions"
@@ -55,13 +58,13 @@ func buildFlags() []cli.Flag {
 		&cli.StringFlag{
 			Name:    fromArg,
 			Aliases: []string{"f"},
-			Value:   "master",
+			Value:   "HEAD",
 			Usage:   "the start of the comparison, any valid git rev",
 		},
 		&cli.StringFlag{
 			Name:    toArg,
 			Aliases: []string{"t"},
-			Value:   "master",
+			Value:   "HEAD",
 			Usage:   "the end of the comparison, any valid git rev",
 		},
 		&cli.BoolFlag{
@@ -73,7 +76,23 @@ func buildFlags() []cli.Flag {
 			Name:    headerLevelArg,
 			Aliases: []string{"i"},
 			Value:   1,
-			Usage:   "add a higher markdown header level depth",
+			Usage:   "markdown header level depth",
+		},
+		&cli.StringFlag{
+			Name:    formatArg,
+			Aliases: []string{"o"},
+			Value:   modiff.FormatMarkdown,
+			Usage:   "output format (markdown or json)",
+		},
+		&cli.StringFlag{
+			Name:  filterArg,
+			Usage: "filter output by category (added, changed, or removed)",
+		},
+		&cli.UintFlag{
+			Name:    concurrencyArg,
+			Aliases: []string{"c"},
+			Value:   modiff.DefaultConcurrency,
+			Usage:   "number of concurrent proxy requests for link resolution",
 		},
 		&cli.BoolFlag{
 			Name:    debugFlag,
@@ -110,7 +129,10 @@ func run(ctx context.Context, cmd *cli.Command) error {
 		cmd.String(toArg),
 		cmd.Bool(linkArg),
 		cmd.Uint(headerLevelArg),
-	)
+	).
+		WithFormat(cmd.String(formatArg)).
+		WithFilter(cmd.String(filterArg)).
+		WithConcurrency(cmd.Uint(concurrencyArg))
 
 	result, err := modiff.Run(ctx, config)
 	if err != nil {

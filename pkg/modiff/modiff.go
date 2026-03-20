@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -57,6 +58,29 @@ const (
 
 	// goProxyDefault is the default Go module proxy URL.
 	goProxyDefault = "https://proxy.golang.org"
+
+	// DefaultConcurrency is the default number of concurrent HTTP
+	// requests when fetching module info from the proxy.
+	DefaultConcurrency = 10
+
+	// httpTimeoutSeconds is the timeout in seconds for HTTP requests
+	// to the Go module proxy.
+	httpTimeoutSeconds = 30
+
+	// FormatMarkdown selects markdown output.
+	FormatMarkdown = "markdown"
+
+	// FormatJSON selects JSON output.
+	FormatJSON = "json"
+
+	// FilterAdded filters for added modules only.
+	FilterAdded = "added"
+
+	// FilterChanged filters for changed modules only.
+	FilterChanged = "changed"
+
+	// FilterRemoved filters for removed modules only.
+	FilterRemoved = "removed"
 )
 
 var (
@@ -64,6 +88,8 @@ var (
 	errNoRepository   = errors.New("repository is required")
 	errSameFromTo     = errors.New("no diff possible if `from` equals `to`")
 	errProxyBadStatus = errors.New("proxy returned unexpected status")
+	errInvalidFormat  = errors.New("invalid format, must be markdown or json")
+	errInvalidFilter  = errors.New("invalid filter, must be added, changed, or removed")
 )
 
 // goModOrigin holds VCS origin information from the Go module proxy.
@@ -87,6 +113,21 @@ type entry struct {
 
 type modules = map[string]entry
 
+// ModuleChange represents a single module dependency change.
+type ModuleChange struct {
+	Name   string `json:"name"`
+	Before string `json:"before,omitempty"`
+	After  string `json:"after,omitempty"`
+	Link   string `json:"link,omitempty"`
+}
+
+// DiffResult holds categorized module changes.
+type DiffResult struct {
+	Added   []ModuleChange `json:"added"`
+	Changed []ModuleChange `json:"changed"`
+	Removed []ModuleChange `json:"removed"`
+}
+
 // Config is the structure passed to `Run`.
 type Config struct {
 	repository  string
@@ -94,14 +135,47 @@ type Config struct {
 	to          string
 	link        bool
 	headerLevel uint
+	format      string
+	filter      string
+	concurrency uint
 }
 
 // NewConfig creates a new configuration.
 func NewConfig(repository, from, to string, link bool, headerLevel uint) *Config {
-	return &Config{repository, from, to, link, headerLevel}
+	return &Config{
+		repository:  repository,
+		from:        from,
+		to:          to,
+		link:        link,
+		headerLevel: headerLevel,
+		format:      FormatMarkdown,
+		filter:      "",
+		concurrency: DefaultConcurrency,
+	}
 }
 
-// Run starts go modiff and returns the markdown string.
+// WithFormat sets the output format (markdown or json).
+func (c *Config) WithFormat(format string) *Config {
+	c.format = format
+
+	return c
+}
+
+// WithFilter sets the category filter (added, changed, or removed).
+func (c *Config) WithFilter(filter string) *Config {
+	c.filter = filter
+
+	return c
+}
+
+// WithConcurrency sets the number of concurrent proxy requests.
+func (c *Config) WithConcurrency(concurrency uint) *Config {
+	c.concurrency = concurrency
+
+	return c
+}
+
+// Run starts go modiff and returns the formatted result string.
 func Run(ctx context.Context, config *Config) (string, error) {
 	if config == nil {
 		return logErr(errNilConfig)
@@ -113,6 +187,11 @@ func Run(ctx context.Context, config *Config) (string, error) {
 
 	if config.from == config.to {
 		return logErr(errSameFromTo)
+	}
+
+	err := validateConfig(config)
+	if err != nil {
+		return logErr(err)
 	}
 
 	dir, err := os.MkdirTemp("", "go-modiff")
@@ -137,7 +216,16 @@ func Run(ctx context.Context, config *Config) (string, error) {
 		return "", err
 	}
 
-	return diffModules(ctx, mods, config.link, config.headerLevel), nil
+	result := diffModules(ctx, mods, config)
+
+	switch config.format {
+	case FormatJSON:
+		applyFilter(&result, config.filter)
+
+		return formatJSON(result)
+	default:
+		return formatMarkdown(result, config.link, config.headerLevel, config.filter), nil
+	}
 }
 
 // CheckURLValid checks whether the given URL returns a valid (non-404) response.
@@ -164,6 +252,22 @@ func CheckURLValid(ctx context.Context, client http.Client, targetURL string) (b
 	}
 
 	return true, nil
+}
+
+func validateConfig(config *Config) error {
+	if config.format != FormatMarkdown && config.format != FormatJSON {
+		return errInvalidFormat
+	}
+
+	validFilters := map[string]bool{
+		"": true, FilterAdded: true, FilterChanged: true, FilterRemoved: true,
+	}
+
+	if !validFilters[config.filter] {
+		return errInvalidFilter
+	}
+
+	return nil
 }
 
 func toURL(name string) string {
@@ -252,7 +356,14 @@ func (info *goModInfo) compareURL(other *goModInfo) string {
 	return ""
 }
 
-func fetchModInfo(ctx context.Context, module, version string) (goModInfo, error) {
+func newHTTPClient() *http.Client {
+	//nolint:exhaustruct // only Timeout needed
+	return &http.Client{
+		Timeout: time.Duration(httpTimeoutSeconds) * time.Second,
+	}
+}
+
+func fetchModInfo(ctx context.Context, client *http.Client, module, version string) (goModInfo, error) {
 	var info goModInfo
 
 	infoURL := fmt.Sprintf("%s/%s/@v/%s.info", goProxyURL(), module, version)
@@ -262,8 +373,6 @@ func fetchModInfo(ctx context.Context, module, version string) (goModInfo, error
 	if err != nil {
 		return info, fmt.Errorf("creating proxy request: %w", err)
 	}
-
-	client := http.Client{} //nolint:exhaustruct // zero value client is intentional
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -347,93 +456,106 @@ func prettifyVersion(version string) string {
 	return hash
 }
 
-func classifyModule(mod entry, name string, addLinks bool, beforeInfo, afterInfo *goModInfo) (string, string) {
+func classifyModule(
+	mod entry, name string, beforeInfo, afterInfo *goModInfo, addLinks bool,
+) (string, ModuleChange) {
 	beforeDisplay := prettifyVersion(mod.beforeVersion)
 	afterDisplay := prettifyVersion(mod.afterVersion)
-	txt := fmt.Sprintf("- %s: ", name)
 
-	if mod.beforeVersion == "" { //nolint:gocritic // if-else chain is clearer here
-		txt += formatSingle(afterDisplay, afterInfo, name, addLinks)
+	if mod.beforeVersion == "" {
+		change := ModuleChange{Name: name, Before: "", After: afterDisplay, Link: ""}
+		if addLinks {
+			change.Link = generateSingleLink(afterDisplay, afterInfo, name)
+		}
 
-		return "added", txt
-	} else if mod.afterVersion == "" {
-		txt += formatSingle(beforeDisplay, beforeInfo, name, addLinks)
-
-		return "removed", txt
-	} else if mod.beforeVersion != mod.afterVersion {
-		txt += formatChanged(beforeDisplay, afterDisplay, beforeInfo, afterInfo, name, addLinks)
-
-		return "changed", txt
+		return FilterAdded, change
 	}
 
-	return "", ""
+	if mod.afterVersion == "" {
+		change := ModuleChange{Name: name, Before: beforeDisplay, After: "", Link: ""}
+		if addLinks {
+			change.Link = generateSingleLink(beforeDisplay, beforeInfo, name)
+		}
+
+		return FilterRemoved, change
+	}
+
+	if mod.beforeVersion != mod.afterVersion {
+		change := ModuleChange{Name: name, Before: beforeDisplay, After: afterDisplay, Link: ""}
+		if addLinks {
+			change.Link = generateCompareLink(beforeDisplay, afterDisplay, beforeInfo, afterInfo, name)
+		}
+
+		return FilterChanged, change
+	}
+
+	return "", ModuleChange{Name: "", Before: "", After: "", Link: ""}
 }
 
-func formatSingle(display string, info *goModInfo, name string, addLinks bool) string {
-	if !addLinks {
-		return display
-	}
-
+func generateSingleLink(display string, info *goModInfo, name string) string {
 	if info != nil && info.isKnownHost() {
-		return fmt.Sprintf("[%s](%s)", display, info.commitURL())
+		return info.commitURL()
 	}
 
 	if isGitHubModule(name) {
-		return fmt.Sprintf("[%s](%s/tree/%s)", display, gitHubBaseURL(name), display)
+		return fmt.Sprintf("%s/tree/%s", gitHubBaseURL(name), display)
 	}
 
-	return display
+	return ""
 }
 
-func formatChanged(
-	beforeDisplay, afterDisplay string, beforeInfo, afterInfo *goModInfo, name string, addLinks bool,
+func generateCompareLink(
+	beforeDisplay, afterDisplay string, beforeInfo, afterInfo *goModInfo, name string,
 ) string {
-	if !addLinks {
-		return fmt.Sprintf("%s → %s", beforeDisplay, afterDisplay)
-	}
-
 	if beforeInfo != nil && afterInfo != nil && beforeInfo.isKnownHost() {
-		return fmt.Sprintf("[%s → %s](%s)", beforeDisplay, afterDisplay, beforeInfo.compareURL(afterInfo))
+		return beforeInfo.compareURL(afterInfo)
 	}
 
 	if isGitHubModule(name) {
 		return fmt.Sprintf(
-			"[%s → %s](%s/compare/%s...%s)",
-			beforeDisplay, afterDisplay, gitHubBaseURL(name), beforeDisplay, afterDisplay,
+			"%s/compare/%s...%s",
+			gitHubBaseURL(name), beforeDisplay, afterDisplay,
 		)
 	}
 
-	return fmt.Sprintf("%s → %s", beforeDisplay, afterDisplay)
+	return ""
 }
 
-type classifiedModule struct {
-	category string
-	txt      string
-}
+func diffModules(ctx context.Context, mods modules, config *Config) DiffResult {
+	type moduleResult struct {
+		category string
+		change   ModuleChange
+	}
 
-func diffModules(ctx context.Context, mods modules, addLinks bool, headerLevel uint) string {
-	results := make(map[string]classifiedModule, len(mods))
+	results := make([]moduleResult, 0, len(mods))
 
-	if addLinks {
+	if config.link {
+		logrus.Infof("Fetching module info for %d modules", len(mods))
+
 		var (
-			mutex   sync.Mutex
-			waitGrp sync.WaitGroup
-			//nolint:mnd // reasonable concurrency limit for HTTP requests
-			semaphore = make(chan struct{}, 10)
+			mutex     sync.Mutex
+			waitGrp   sync.WaitGroup
+			semaphore = make(chan struct{}, max(config.concurrency, 1))
 		)
+
+		client := newHTTPClient()
 
 		for name, mod := range mods {
 			waitGrp.Go(func() {
 				semaphore <- struct{}{}
 
-				beforeInfo, afterInfo := fetchModInfoPair(ctx, name, mod)
+				beforeInfo, afterInfo := fetchModInfoPair(ctx, client, name, mod)
 
 				<-semaphore
 
-				category, txt := classifyModule(mod, name, addLinks, beforeInfo, afterInfo)
+				category, change := classifyModule(mod, name, beforeInfo, afterInfo, true)
+				if category == "" {
+					return
+				}
 
 				mutex.Lock()
-				results[name] = classifiedModule{category, txt}
+
+				results = append(results, moduleResult{category: category, change: change})
 				mutex.Unlock()
 			})
 		}
@@ -441,39 +563,62 @@ func diffModules(ctx context.Context, mods modules, addLinks bool, headerLevel u
 		waitGrp.Wait()
 	} else {
 		for name, mod := range mods {
-			category, txt := classifyModule(mod, name, addLinks, nil, nil)
-			results[name] = classifiedModule{category, txt}
+			category, change := classifyModule(mod, name, nil, nil, false)
+			if category == "" {
+				continue
+			}
+
+			results = append(results, moduleResult{category: category, change: change})
 		}
 	}
 
-	var added, removed, changed []string
+	diffResult := DiffResult{
+		Added:   []ModuleChange{},
+		Changed: []ModuleChange{},
+		Removed: []ModuleChange{},
+	}
 
 	for _, res := range results {
 		switch res.category {
-		case "added":
-			added = append(added, res.txt)
-		case "removed":
-			removed = append(removed, res.txt)
-		case "changed":
-			changed = append(changed, res.txt)
+		case FilterAdded:
+			diffResult.Added = append(diffResult.Added, res.change)
+		case FilterChanged:
+			diffResult.Changed = append(diffResult.Changed, res.change)
+		case FilterRemoved:
+			diffResult.Removed = append(diffResult.Removed, res.change)
 		}
 	}
 
-	sort.Strings(added)
-	sort.Strings(changed)
-	sort.Strings(removed)
-	logrus.Infof("%d modules added", len(added))
-	logrus.Infof("%d modules changed", len(changed))
-	logrus.Infof("%d modules removed", len(removed))
+	sort.Slice(diffResult.Added, func(i, j int) bool { return diffResult.Added[i].Name < diffResult.Added[j].Name })
+	sort.Slice(diffResult.Changed, func(i, j int) bool { return diffResult.Changed[i].Name < diffResult.Changed[j].Name })
+	sort.Slice(diffResult.Removed, func(i, j int) bool { return diffResult.Removed[i].Name < diffResult.Removed[j].Name })
 
-	return formatMarkdown(added, changed, removed, headerLevel)
+	logrus.Infof("%d modules added", len(diffResult.Added))
+	logrus.Infof("%d modules changed", len(diffResult.Changed))
+	logrus.Infof("%d modules removed", len(diffResult.Removed))
+
+	return diffResult
 }
 
-func fetchModInfoPair(ctx context.Context, name string, mod entry) (*goModInfo, *goModInfo) {
+func applyFilter(result *DiffResult, filter string) {
+	switch filter {
+	case FilterAdded:
+		result.Changed = []ModuleChange{}
+		result.Removed = []ModuleChange{}
+	case FilterChanged:
+		result.Added = []ModuleChange{}
+		result.Removed = []ModuleChange{}
+	case FilterRemoved:
+		result.Added = []ModuleChange{}
+		result.Changed = []ModuleChange{}
+	}
+}
+
+func fetchModInfoPair(ctx context.Context, client *http.Client, name string, mod entry) (*goModInfo, *goModInfo) {
 	var beforeInfo, afterInfo *goModInfo
 
 	if mod.beforeVersion != "" {
-		info, err := fetchModInfo(ctx, name, mod.beforeVersion)
+		info, err := fetchModInfo(ctx, client, name, mod.beforeVersion)
 		if err != nil {
 			logrus.Debugf("Could not fetch module info for %s@%s: %v", name, mod.beforeVersion, err)
 		} else {
@@ -482,7 +627,7 @@ func fetchModInfoPair(ctx context.Context, name string, mod entry) (*goModInfo, 
 	}
 
 	if mod.afterVersion != "" {
-		info, err := fetchModInfo(ctx, name, mod.afterVersion)
+		info, err := fetchModInfo(ctx, client, name, mod.afterVersion)
 		if err != nil {
 			logrus.Debugf("Could not fetch module info for %s@%s: %v", name, mod.afterVersion, err)
 		} else {
@@ -493,7 +638,34 @@ func fetchModInfoPair(ctx context.Context, name string, mod entry) (*goModInfo, 
 	return beforeInfo, afterInfo
 }
 
-func formatMarkdown(added, changed, removed []string, headerLevel uint) string {
+func formatModuleMarkdown(change ModuleChange, category string, addLinks bool) string {
+	txt := fmt.Sprintf("- %s: ", change.Name)
+
+	switch category {
+	case FilterAdded:
+		if addLinks && change.Link != "" {
+			txt += fmt.Sprintf("[%s](%s)", change.After, change.Link)
+		} else {
+			txt += change.After
+		}
+	case FilterRemoved:
+		if addLinks && change.Link != "" {
+			txt += fmt.Sprintf("[%s](%s)", change.Before, change.Link)
+		} else {
+			txt += change.Before
+		}
+	case FilterChanged:
+		if addLinks && change.Link != "" {
+			txt += fmt.Sprintf("[%s → %s](%s)", change.Before, change.After, change.Link)
+		} else {
+			txt += fmt.Sprintf("%s → %s", change.Before, change.After)
+		}
+	}
+
+	return txt
+}
+
+func formatMarkdown(result DiffResult, addLinks bool, headerLevel uint, filter string) string {
 	level := min(headerLevel, maxHeaderLevel)
 	builder := &strings.Builder{}
 
@@ -501,26 +673,43 @@ func formatMarkdown(added, changed, removed []string, headerLevel uint) string {
 		builder, "%s Dependencies\n", strings.Repeat("#", int(level)), //nolint:gosec // level is clamped to maxHeaderLevel
 	)
 
-	writeSection := func(section string, input []string) {
+	writeSection := func(section string, changes []ModuleChange, category string) {
 		fmt.Fprintf(
 			builder,
 			"\n%s %s\n", strings.Repeat("#", int(level)+1), section, //nolint:gosec // level is clamped to maxHeaderLevel
 		)
 
-		if len(input) > 0 {
-			for _, mod := range input {
-				fmt.Fprintf(builder, "%s\n", mod)
+		if len(changes) > 0 {
+			for _, change := range changes {
+				fmt.Fprintf(builder, "%s\n", formatModuleMarkdown(change, category, addLinks))
 			}
 		} else {
 			builder.WriteString("_Nothing has changed._\n")
 		}
 	}
 
-	writeSection("Added", added)
-	writeSection("Changed", changed)
-	writeSection("Removed", removed)
+	if filter == "" || filter == FilterAdded {
+		writeSection("Added", result.Added, FilterAdded)
+	}
+
+	if filter == "" || filter == FilterChanged {
+		writeSection("Changed", result.Changed, FilterChanged)
+	}
+
+	if filter == "" || filter == FilterRemoved {
+		writeSection("Removed", result.Removed, FilterRemoved)
+	}
 
 	return builder.String()
+}
+
+func formatJSON(result DiffResult) (string, error) {
+	data, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("marshaling JSON result: %w", err)
+	}
+
+	return string(data) + "\n", nil
 }
 
 func parseModuleLine(line string) (string, string, bool) {
@@ -639,7 +828,6 @@ func runCmd(ctx context.Context, dir, cmd string, args ...string) error {
 func runCmdOutput(ctx context.Context, dir, cmd string, args ...string) ([]byte, error) {
 	//nolint:gosec // cmd is always controlled internally
 	command := exec.CommandContext(ctx, cmd, args...)
-	command.Stderr = nil
 	command.Dir = dir
 
 	output, err := command.Output()

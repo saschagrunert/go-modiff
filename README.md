@@ -16,10 +16,11 @@ go install github.com/saschagrunert/go-modiff/cmd/go-modiff@latest
 After that, the application can be used like this:
 
 ```shell
-> go-modiff -r github.com/cri-o/cri-o -f v1.15.0
-INFO Setting up repository github.com/cri-o/cri-o
-INFO Retrieving modules of v1.15.0
-INFO Retrieving modules of master
+> go-modiff -r github.com/cri-o/cri-o -f v1.35.0
+INFO Cloning reference repository github.com/cri-o/cri-o
+INFO Setting up 'from' at v1.35.0
+INFO Setting up 'to' at HEAD
+INFO Processing module diffs
 INFO 385 modules found
 INFO 1 modules added
 INFO 11 modules changed
@@ -76,6 +77,32 @@ The output would then look like this:
 - github.com/saschagrunert/go-docgen: [v0.1.3](https://github.com/saschagrunert/go-docgen/tree/v0.1.3)
 ```
 
+### JSON output
+
+Use `--format json` (or `-o json`) for machine-readable output:
+
+```json
+{
+  "added": [],
+  "changed": [
+    {
+      "name": "github.com/onsi/ginkgo",
+      "before": "v1.8.0",
+      "after": "v1.9.0"
+    }
+  ],
+  "removed": []
+}
+```
+
+### Filtering
+
+Use `--filter` to show only a specific category:
+
+```shell
+go-modiff -r github.com/owner/repo -f v1.0.0 -t v2.0.0 --filter added
+```
+
 ### Arguments
 
 The following command line arguments are currently supported:
@@ -83,11 +110,27 @@ The following command line arguments are currently supported:
 | Argument              | Description                                                         |
 | --------------------- | ------------------------------------------------------------------- |
 | `--repository, -r`    | repository to be used, like: github.com/owner/repo                  |
-| `--from, -f`          | the start of the comparison (any valid git rev) (default: "master") |
-| `--to, -t`            | the end of the comparison (any valid git rev) (default: "master")   |
+| `--from, -f`          | the start of the comparison (any valid git rev) (default: "HEAD") |
+| `--to, -t`            | the end of the comparison (any valid git rev) (default: "HEAD")   |
 | `--link, -l`          | add diff links to the markdown output (default: false)              |
 | `--header-level, -i`  | markdown header level depth (default: 1)                            |
+| `--format, -o`        | output format: markdown or json (default: "markdown")               |
+| `--filter`            | filter by category: added, changed, or removed                     |
+| `--concurrency, -c`   | concurrent proxy requests for link resolution (default: 10)         |
 | `--debug, -d`         | enable debug output (default: false)                                |
+
+### How links work
+
+When `--link` is enabled, go-modiff queries the Go module proxy
+(`proxy.golang.org`) to resolve VCS metadata (repository URL, commit hash, git
+ref) for each changed module. This provides accurate commit and compare links
+for GitHub and `go.googlesource.com` hosted modules. For modules where the proxy
+does not return origin data, go-modiff falls back to URL-pattern-based link
+generation for GitHub modules.
+
+The `--concurrency` flag controls how many proxy requests run in parallel
+(default: 10). Increase it for faster link resolution on large diffs, or
+decrease it to reduce load on the proxy.
 
 ## Contributing
 

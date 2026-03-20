@@ -1,6 +1,6 @@
 # go-modiff 📔
 
-[![CircleCI](https://circleci.com/gh/saschagrunert/go-modiff.svg?style=shield)](https://circleci.com/gh/saschagrunert/go-modiff)
+[![ci](https://github.com/saschagrunert/go-modiff/actions/workflows/ci.yml/badge.svg)](https://github.com/saschagrunert/go-modiff/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/saschagrunert/go-modiff/branch/main/graph/badge.svg)](https://codecov.io/gh/saschagrunert/go-modiff)
 
 ## Command line tool for diffing go module dependency changes between versions
@@ -10,7 +10,7 @@
 The tool can be installed via:
 
 ```shell
-go get github.com/saschagrunert/go-modiff/cmd/go-modiff
+go install github.com/saschagrunert/go-modiff/cmd/go-modiff@latest
 ```
 
 After that, the application can be used like this:
@@ -80,13 +80,14 @@ The output would then look like this:
 
 The following command line arguments are currently supported:
 
-| Argument           | Description                                                         |
-| ------------------ | ------------------------------------------------------------------- |
-| `--repository, -r` | repository to be used, like: github.com/owner/repo                  |
-| `--from, -f`       | the start of the comparison (any valid git rev) (default: "master") |
-| `--to, -t`         | the end of the comparison (any valid git rev) (default: "master")   |
-| `--link, -l`       | add diff lnks to the markdown output (default: false)               |
-| `--debug, -d`      | enable debug output (default: false)                                |
+| Argument              | Description                                                         |
+| --------------------- | ------------------------------------------------------------------- |
+| `--repository, -r`    | repository to be used, like: github.com/owner/repo                  |
+| `--from, -f`          | the start of the comparison (any valid git rev) (default: "master") |
+| `--to, -t`            | the end of the comparison (any valid git rev) (default: "master")   |
+| `--link, -l`          | add diff links to the markdown output (default: false)              |
+| `--header-level, -i`  | markdown header level depth (default: 1)                            |
+| `--debug, -d`         | enable debug output (default: false)                                |
 
 ## Contributing
 

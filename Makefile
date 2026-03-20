@@ -20,16 +20,9 @@ all: $(GO_MODIFF)
 clean:
 	rm -rf $(BUILD_PATH)
 
-.PHONY: codecov
-codecov: SHELL := $(shell which bash)
-codecov:
-	bash <(curl -s https://codecov.io/bash) -f $(COVERAGE_PATH)/coverprofile
-
-.PHONY: docs
-docs: $(GO_MODIFF)
-	$(GO_MODIFF) d --markdown > docs/go-modiff.8.md
-	$(GO_MODIFF) d --man > docs/go-modiff.8
-	$(GO_MODIFF) f > completions/go-modiff.fish
+.PHONY: completions
+completions: $(GO_MODIFF)
+	$(GO_MODIFF) fish > completions/go-modiff.fish
 
 .PHONY: $(GO_MODIFF)
 $(GO_MODIFF):
@@ -41,13 +34,13 @@ $(GO_MODIFF_STATIC):
 
 $(GOLANGCI_LINT):
 	export \
-		VERSION=v1.55.2 \
+		VERSION=v2.11.3 \
 		URL=https://raw.githubusercontent.com/golangci/golangci-lint \
 		BINDIR=$(BUILD_PATH) && \
 	curl -sfL $$URL/$$VERSION/install.sh | sh -s $$VERSION
 
 $(GINKGO):
-	$(call go-build,./vendor/github.com/onsi/ginkgo/v2/ginkgo)
+	$(GO) build -o $(BUILD_PATH)/ginkgo github.com/onsi/ginkgo/v2/ginkgo
 
 .PHONY: lint
 lint: $(GOLANGCI_LINT)
@@ -60,7 +53,6 @@ test: $(GINKGO)
 	$(BUILD_PATH)/ginkgo run $(TESTFLAGS) \
 		-r -p \
 		--cover \
-		--mod vendor \
 		--randomize-all \
 		--randomize-suites \
 		--covermode atomic \
@@ -73,9 +65,6 @@ test: $(GINKGO)
 	$(GO) tool cover -html=$(COVERAGE_PATH)/coverprofile -o $(COVERAGE_PATH)/coverage.html
 	$(GO) tool cover -func=$(COVERAGE_PATH)/coverprofile
 
-.PHONY: vendor
-vendor:
-	export GO111MODULE=on GOSUMDB= && \
-		$(GO) mod tidy && \
-		$(GO) mod vendor && \
-		$(GO) mod verify
+.PHONY: tidy
+tidy:
+	$(GO) mod tidy && $(GO) mod verify

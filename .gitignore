@@ -8,4 +8,5 @@
 *.test
 *_junit.xml
 /build
+/vendor
 coverprofile*

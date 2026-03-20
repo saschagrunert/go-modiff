@@ -1,3 +1,4 @@
+// Package framework provides test utilities for the modiff test suite.
 package framework
 
 import (
@@ -7,14 +8,14 @@ import (
 	"github.com/onsi/gomega"
 )
 
-// TestFramework is used to support commonly used test features
+// TestFramework is used to support commonly used test features.
 type TestFramework struct {
 	setup    func(*TestFramework) error
 	teardown func(*TestFramework) error
 }
 
 // NewTestFramework creates a new test framework instance for a given `setup`
-// and `teardown` function
+// and `teardown` function.
 func NewTestFramework(setup, teardown func(*TestFramework) error) *TestFramework {
 	return &TestFramework{
 		setup,
@@ -22,13 +23,13 @@ func NewTestFramework(setup, teardown func(*TestFramework) error) *TestFramework
 	}
 }
 
-// NilFunc is a convenience function which simply does nothing
+// NilFunc is a convenience function which simply does nothing.
 func NilFunc(*TestFramework) error {
 	return nil
 }
 
 // Setup is the global initialization function which runs before each test
-// suite
+// suite.
 func (t *TestFramework) Setup() {
 	// Global initialization for the whole framework goes in here
 
@@ -37,7 +38,7 @@ func (t *TestFramework) Setup() {
 }
 
 // Teardown is the global deinitialization function which runs after each test
-// suite
+// suite.
 func (t *TestFramework) Teardown() {
 	// Global deinitialization for the whole framework goes in here
 
@@ -45,12 +46,12 @@ func (t *TestFramework) Teardown() {
 	gomega.Expect(t.teardown(t)).To(gomega.Succeed())
 }
 
-// Describe is a convenience wrapper around the `ginkgo.Describe` function
+// Describe is a convenience wrapper around the `ginkgo.Describe` function.
 func (t *TestFramework) Describe(text string, body func()) bool {
 	return ginkgo.Describe("modiff: "+text, body)
 }
 
-// RunFrameworkSpecs is a convenience wrapper for running tests
+// RunFrameworkSpecs is a convenience wrapper for running tests.
 func RunFrameworkSpecs(t *testing.T, suiteName string) {
 	t.Helper()
 	ginkgo.RunSpecs(t, suiteName)

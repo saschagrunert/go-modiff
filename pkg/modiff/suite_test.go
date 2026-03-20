@@ -9,21 +9,21 @@ import (
 	. "github.com/saschagrunert/go-modiff/test/framework"
 )
 
-// TestModiff runs the created specs
-func TestModiff(t *testing.T) {
-	t.Parallel()
+// TestModiff runs the created specs.
+func TestModiff(test *testing.T) {
+	test.Parallel()
 	RegisterFailHandler(Fail)
-	RunFrameworkSpecs(t, "modiff")
+	RunFrameworkSpecs(test, "modiff")
 }
 
 //nolint:gochecknoglobals // test framework should be global
-var t *TestFramework
+var testFramework *TestFramework
 
 var _ = BeforeSuite(func() {
-	t = NewTestFramework(NilFunc, NilFunc)
-	t.Setup()
+	testFramework = NewTestFramework(NilFunc, NilFunc)
+	testFramework.Setup()
 })
 
 var _ = AfterSuite(func() {
-	t.Teardown()
+	testFramework.Teardown()
 })

@@ -4,7 +4,7 @@ go 1.26
 
 require (
 	github.com/onsi/ginkgo/v2 v2.28.1
-	github.com/onsi/gomega v1.39.1
+	github.com/onsi/gomega v1.41.0
 	github.com/saschagrunert/ccli/v3 v3.0.0
 	github.com/sirupsen/logrus v1.9.4
 	github.com/urfave/cli/v3 v3.7.0

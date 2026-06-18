@@ -7,7 +7,7 @@ require (
 	github.com/onsi/gomega v1.42.0
 	github.com/saschagrunert/ccli/v3 v3.0.0
 	github.com/sirupsen/logrus v1.9.4
-	github.com/urfave/cli/v3 v3.7.0
+	github.com/urfave/cli/v3 v3.10.0
 )
 
 require (

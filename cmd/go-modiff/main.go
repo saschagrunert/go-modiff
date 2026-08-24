@@ -3,13 +3,20 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
 	ccli "github.com/saschagrunert/ccli/v3"
-	"github.com/saschagrunert/go-modiff/pkg/modiff"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v3"
+
+	"github.com/saschagrunert/go-modiff/pkg/modiff"
+)
+
+var (
+	version        = "dev"
+	errFromMissing = errors.New("--from (-f) is required")
 )
 
 const (
@@ -36,7 +43,7 @@ func main() {
 func buildApp() *cli.Command {
 	app := ccli.NewCommand()
 	app.Name = "go-modiff"
-	app.Version = "1.4.0"
+	app.Version = version
 	app.Authors = []any{"Sascha Grunert <mail@saschagrunert.de>"}
 	app.Usage = "Command line tool for diffing go module " +
 		"dependency changes between versions"
@@ -58,8 +65,7 @@ func buildFlags() []cli.Flag {
 		&cli.StringFlag{
 			Name:    fromArg,
 			Aliases: []string{"f"},
-			Value:   "HEAD",
-			Usage:   "the start of the comparison, any valid git rev",
+			Usage:   "the start of the comparison, any valid git rev (required)",
 		},
 		&cli.StringFlag{
 			Name:    toArg,
@@ -74,7 +80,7 @@ func buildFlags() []cli.Flag {
 		},
 		&cli.UintFlag{
 			Name:    headerLevelArg,
-			Aliases: []string{"i"},
+			Aliases: []string{"H"},
 			Value:   1,
 			Usage:   "markdown header level depth",
 		},
@@ -123,9 +129,14 @@ func run(ctx context.Context, cmd *cli.Command) error {
 		logrus.SetLevel(logrus.InfoLevel)
 	}
 
+	from := cmd.String(fromArg)
+	if from == "" {
+		return errFromMissing
+	}
+
 	config := modiff.NewConfig(
 		cmd.String(repositoryArg),
-		cmd.String(fromArg),
+		from,
 		cmd.String(toArg),
 		cmd.Bool(linkArg),
 		cmd.Uint(headerLevelArg),

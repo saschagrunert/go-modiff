@@ -1,6 +1,5 @@
 package modiff
 
-//nolint:gochecknoglobals // exported for testing
 var (
 	GoProxyURLForTest      = goProxyURL
 	ParseModuleLineForTest = parseModuleLine
@@ -56,4 +55,9 @@ func GenerateSingleLinkForTest(display string, info *goModInfo, name string) str
 // ApplyFilterForTest calls applyFilter.
 func ApplyFilterForTest(result *DiffResult, filter string) {
 	applyFilter(result, filter)
+}
+
+// ConcurrencyForTest returns the concurrency value from a Config.
+func (c *Config) ConcurrencyForTest() uint {
+	return c.concurrency
 }

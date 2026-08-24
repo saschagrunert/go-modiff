@@ -1,0 +1,43 @@
+version: 2
+
+project_name: go-modiff
+
+builds:
+  - main: ./cmd/go-modiff/
+    binary: go-modiff
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+archives:
+  - formats:
+      - binary
+
+checksum:
+  name_template: checksums.txt
+
+signs:
+  - cmd: cosign
+    signature: "${artifact}.sigstore.json"
+    args:
+      - sign-blob
+      - --bundle=${signature}
+      - --yes
+      - ${artifact}
+    artifacts: checksum
+
+sboms:
+  - artifacts: binary
+
+changelog:
+  use: github-native

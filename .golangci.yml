@@ -2,8 +2,8 @@
 version: "2"
 run:
   concurrency: 6
-  timeout: 5m
 linters:
+  default: none
   enable:
     - arangolint
     - asasalint
@@ -11,6 +11,7 @@ linters:
     - bidichk
     - bodyclose
     - canonicalheader
+    - clickhouselint
     - containedctx
     - contextcheck
     - copyloopvar
@@ -28,7 +29,7 @@ linters:
     - errname
     - errorlint
     - exhaustive
-    - exhaustruct
+    - exhaustruct_v5
     - exptostd
     - fatcontext
     - forbidigo
@@ -49,7 +50,7 @@ linters:
     - godox
     - goheader
     - gomoddirectives
-    - gomodguard
+    - gomodguard_v2
     - goprintffuncname
     - gosec
     - gosmopolitan
@@ -128,10 +129,11 @@ linters:
     errcheck:
       check-blank: true
       check-type-assertions: true
-    exhaustruct:
-      exclude:
-        - 'github\.com/urfave/cli/v3\.FlagBase'
+    exhaustruct_v5:
+      ignore-patterns:
+        - 'github\.com/urfave/cli/v3\.'
         - 'github\.com/sirupsen/logrus\.TextFormatter'
+        - 'net/http\.Client'
     funlen:
       lines: 80
       statements: 50
@@ -140,7 +142,6 @@ linters:
     gocritic:
       enable-all: true
       disabled-checks:
-        # Conflicts with the nonamedreturns linter.
         - unnamedResult
     godox:
       keywords:
@@ -149,7 +150,32 @@ linters:
         - HACK
     nestif:
       min-complexity: 15
+  exclusions:
+    rules:
+      - linters:
+          - exhaustruct_v5
+        path: cmd/
+      - linters:
+          - dupl
+          - exhaustruct_v5
+          - funlen
+          - gochecknoglobals
+          - goconst
+          - gosec
+          - lll
+          - revive
+        path: _test\.go
 formatters:
   enable:
+    - gci
+    - gofmt
     - gofumpt
     - goimports
+    - golines
+    - swaggo
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - localmodule

@@ -21,51 +21,20 @@ import (
 )
 
 const (
-	// gitHubPathSegments is the number of path segments in a standard
-	// GitHub module path (e.g. github.com/owner/repo).
-	gitHubPathSegments = 3
-
-	// minModuleFields is the minimum number of fields expected when
-	// parsing a go list module line (name + version).
-	minModuleFields = 2
-
-	// localRewriteFields is the number of fields for a local rewrite
-	// without a version (e.g. "mod => ../local").
-	localRewriteFields = 4
-
-	// fullRewriteFields is the number of fields for a rewrite with
-	// a version (e.g. "old v1 => new v2").
-	fullRewriteFields = 5
-
-	// minPseudoVersionParts is the minimum number of dash-separated
-	// parts in a pseudo-version string.
+	gitHubPathSegments    = 3
+	minModuleFields       = 2
+	localRewriteFields    = 4
+	fullRewriteFields     = 5
 	minPseudoVersionParts = 3
-
-	// shortHashLength is the length used to truncate pseudo-version
-	// commit hashes for display.
-	shortHashLength = 7
-
-	// maxHeaderLevel is the maximum markdown header level (h6).
-	maxHeaderLevel = 6
-
-	// refSplitParts is the number of parts when splitting a git ref
-	// path (e.g. refs/tags/v1.0.0 splits into 3 parts).
-	refSplitParts = 3
-
-	// proxySplitParts is the number of parts when splitting GOPROXY
-	// env value at the first comma.
-	proxySplitParts = 2
-
-	// goProxyDefault is the default Go module proxy URL.
-	goProxyDefault = "https://proxy.golang.org"
+	shortHashLength       = 7
+	maxHeaderLevel        = 6
+	refSplitParts         = 3
+	goProxyDefault        = "https://proxy.golang.org"
+	httpTimeoutSeconds    = 30
 
 	// DefaultConcurrency is the default number of concurrent HTTP
 	// requests when fetching module info from the proxy.
 	DefaultConcurrency = 10
-
-	// httpTimeoutSeconds is the timeout in seconds for HTTP requests
-	// to the Go module proxy.
-	httpTimeoutSeconds = 30
 
 	// FormatMarkdown selects markdown output.
 	FormatMarkdown = "markdown"
@@ -84,12 +53,15 @@ const (
 )
 
 var (
-	errNilConfig      = errors.New("config is nil")
-	errNoRepository   = errors.New("repository is required")
-	errSameFromTo     = errors.New("no diff possible if `from` equals `to`")
-	errProxyBadStatus = errors.New("proxy returned unexpected status")
-	errInvalidFormat  = errors.New("invalid format, must be markdown or json")
-	errInvalidFilter  = errors.New("invalid filter, must be added, changed, or removed")
+	errNilConfig       = errors.New("config is nil")
+	errNoRepository    = errors.New("repository is required")
+	errSameFromTo      = errors.New("no diff possible if `from` equals `to`")
+	errProxyBadStatus  = errors.New("proxy returned unexpected status")
+	errInvalidFormat   = errors.New("invalid format, must be markdown or json")
+	errInvalidFilter   = errors.New("invalid filter, must be added, changed, or removed")
+	errInvalidRepoPath = errors.New(
+		"repository must be a valid module path (e.g., github.com/owner/repo)",
+	)
 )
 
 // goModOrigin holds VCS origin information from the Go module proxy.
@@ -175,28 +147,30 @@ func (c *Config) WithConcurrency(concurrency uint) *Config {
 	return c
 }
 
-// Run starts go modiff and returns the formatted result string.
-func Run(ctx context.Context, config *Config) (string, error) {
+// RunStructured starts go modiff and returns the structured diff result.
+func RunStructured(ctx context.Context, config *Config) (DiffResult, error) {
+	var empty DiffResult
+
 	if config == nil {
-		return logErr(errNilConfig)
+		return empty, errNilConfig
 	}
 
 	if config.repository == "" {
-		return logErr(errNoRepository)
+		return empty, errNoRepository
 	}
 
 	if config.from == config.to {
-		return logErr(errSameFromTo)
+		return empty, errSameFromTo
 	}
 
 	err := validateConfig(config)
 	if err != nil {
-		return logErr(err)
+		return empty, err
 	}
 
 	dir, err := os.MkdirTemp("", "go-modiff")
 	if err != nil {
-		return logErr(err)
+		return empty, fmt.Errorf("creating temp directory: %w", err)
 	}
 
 	defer func() {
@@ -208,16 +182,34 @@ func Run(ctx context.Context, config *Config) (string, error) {
 
 	err = cloneRepos(ctx, dir, config)
 	if err != nil {
-		return logErr(err)
+		return empty, err
 	}
 
 	mods, err := getModules(ctx, filepath.Join(dir, "from"), filepath.Join(dir, "to"))
 	if err != nil {
-		return "", err
+		return empty, err
 	}
 
 	result := diffModules(ctx, mods, config)
 	applyFilter(&result, config.filter)
+
+	return result, nil
+}
+
+// Run starts go modiff and returns the formatted result string.
+func Run(ctx context.Context, config *Config) (string, error) {
+	if config == nil {
+		return "", errNilConfig
+	}
+
+	if config.format != FormatMarkdown && config.format != FormatJSON {
+		return "", errInvalidFormat
+	}
+
+	result, err := RunStructured(ctx, config)
+	if err != nil {
+		return "", err
+	}
 
 	switch config.format {
 	case FormatJSON:
@@ -254,8 +246,8 @@ func CheckURLValid(ctx context.Context, client *http.Client, targetURL string) (
 }
 
 func validateConfig(config *Config) error {
-	if config.format != FormatMarkdown && config.format != FormatJSON {
-		return errInvalidFormat
+	if !strings.Contains(config.repository, ".") || !strings.Contains(config.repository, "/") {
+		return errInvalidRepoPath
 	}
 
 	validFilters := map[string]bool{
@@ -269,23 +261,13 @@ func validateConfig(config *Config) error {
 	return nil
 }
 
-func toURL(name string) string {
-	return "https://" + name
-}
-
-func logErr(err error) (string, error) {
-	logrus.Error(err)
-
-	return "", err
-}
-
 func goProxyURL() string {
 	proxyEnv, exists := os.LookupEnv("GOPROXY")
 	if !exists || proxyEnv == "" {
 		return goProxyDefault
 	}
 
-	first := strings.SplitN(proxyEnv, ",", proxySplitParts)[0]
+	first, _, _ := strings.Cut(proxyEnv, ",")
 	if first == "direct" || first == "off" {
 		return goProxyDefault
 	}
@@ -356,13 +338,14 @@ func (info *goModInfo) compareURL(other *goModInfo) string {
 }
 
 func newHTTPClient() *http.Client {
-	//nolint:exhaustruct // only Timeout needed
 	return &http.Client{
 		Timeout: time.Duration(httpTimeoutSeconds) * time.Second,
 	}
 }
 
-func fetchModInfo(ctx context.Context, client *http.Client, module, version string) (goModInfo, error) {
+func fetchModInfo(
+	ctx context.Context, client *http.Client, module, version string,
+) (goModInfo, error) {
 	var info goModInfo
 
 	infoURL := fmt.Sprintf("%s/%s/@v/%s.info", goProxyURL(), module, version)
@@ -402,34 +385,43 @@ func fetchModInfo(ctx context.Context, client *http.Client, module, version stri
 
 func cloneRepos(ctx context.Context, dir string, config *Config) error {
 	referenceDir := filepath.Join(dir, "reference")
+	repoURL := "https://" + config.repository
 
 	logrus.Infof("Cloning reference repository %s", config.repository)
 
 	err := runGit(
 		ctx, dir, "clone", "--filter=blob:none", "--bare",
-		toURL(config.repository), referenceDir,
+		repoURL, referenceDir,
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("cloning repository %s: %w", config.repository, err)
 	}
 
 	logrus.Infof("Setting up 'from' at %s", config.from)
 
-	err = cloneAtRevision(ctx, dir, referenceDir, config.repository, config.from, filepath.Join(dir, "from"))
+	err = cloneAtRevision(ctx, dir, referenceDir, repoURL, config.from, filepath.Join(dir, "from"))
 	if err != nil {
-		return err
+		return fmt.Errorf("setting up revision %s: %w", config.from, err)
 	}
 
 	logrus.Infof("Setting up 'to' at %s", config.to)
 
-	return cloneAtRevision(ctx, dir, referenceDir, config.repository, config.to, filepath.Join(dir, "to"))
+	err = cloneAtRevision(ctx, dir, referenceDir, repoURL, config.to, filepath.Join(dir, "to"))
+	if err != nil {
+		return fmt.Errorf("setting up revision %s: %w", config.to, err)
+	}
+
+	return nil
 }
 
-func cloneAtRevision(ctx context.Context, parentDir, referenceDir, repository, rev, targetDir string) error {
+func cloneAtRevision(
+	ctx context.Context,
+	parentDir, referenceDir, repoURL, rev, targetDir string,
+) error {
 	err := runGit(
 		ctx, parentDir, "clone", "--filter=blob:none",
 		"--reference", referenceDir, "--no-checkout",
-		toURL(repository), targetDir,
+		repoURL, targetDir,
 	)
 	if err != nil {
 		return err
@@ -482,7 +474,13 @@ func classifyModule(
 	if mod.beforeVersion != mod.afterVersion {
 		change := ModuleChange{Name: name, Before: beforeDisplay, After: afterDisplay, Link: ""}
 		if addLinks {
-			change.Link = generateCompareLink(beforeDisplay, afterDisplay, beforeInfo, afterInfo, name)
+			change.Link = generateCompareLink(
+				beforeDisplay,
+				afterDisplay,
+				beforeInfo,
+				afterInfo,
+				name,
+			)
 		}
 
 		return FilterChanged, change
@@ -520,12 +518,12 @@ func generateCompareLink(
 	return ""
 }
 
-func diffModules(ctx context.Context, mods modules, config *Config) DiffResult {
-	type moduleResult struct {
-		category string
-		change   ModuleChange
-	}
+type moduleResult struct {
+	category string
+	change   ModuleChange
+}
 
+func diffModules(ctx context.Context, mods modules, config *Config) DiffResult {
 	results := make([]moduleResult, 0, len(mods))
 
 	if config.link {
@@ -541,15 +539,7 @@ func diffModules(ctx context.Context, mods modules, config *Config) DiffResult {
 
 		for name, mod := range mods {
 			waitGrp.Go(func() {
-				select {
-				case semaphore <- struct{}{}:
-				case <-ctx.Done():
-					return
-				}
-
-				beforeInfo, afterInfo := fetchModInfoPair(ctx, client, name, mod)
-
-				<-semaphore
+				beforeInfo, afterInfo := fetchModInfoPair(ctx, client, name, mod, semaphore)
 
 				category, change := classifyModule(mod, name, beforeInfo, afterInfo, true)
 				if category == "" {
@@ -575,6 +565,10 @@ func diffModules(ctx context.Context, mods modules, config *Config) DiffResult {
 		}
 	}
 
+	return buildDiffResult(results)
+}
+
+func buildDiffResult(results []moduleResult) DiffResult {
 	diffResult := DiffResult{
 		Added:   []ModuleChange{},
 		Changed: []ModuleChange{},
@@ -592,9 +586,18 @@ func diffModules(ctx context.Context, mods modules, config *Config) DiffResult {
 		}
 	}
 
-	sort.Slice(diffResult.Added, func(i, j int) bool { return diffResult.Added[i].Name < diffResult.Added[j].Name })
-	sort.Slice(diffResult.Changed, func(i, j int) bool { return diffResult.Changed[i].Name < diffResult.Changed[j].Name })
-	sort.Slice(diffResult.Removed, func(i, j int) bool { return diffResult.Removed[i].Name < diffResult.Removed[j].Name })
+	sort.Slice(
+		diffResult.Added,
+		func(i, j int) bool { return diffResult.Added[i].Name < diffResult.Added[j].Name },
+	)
+	sort.Slice(
+		diffResult.Changed,
+		func(i, j int) bool { return diffResult.Changed[i].Name < diffResult.Changed[j].Name },
+	)
+	sort.Slice(
+		diffResult.Removed,
+		func(i, j int) bool { return diffResult.Removed[i].Name < diffResult.Removed[j].Name },
+	)
 
 	logrus.Infof("%d modules added", len(diffResult.Added))
 	logrus.Infof("%d modules changed", len(diffResult.Changed))
@@ -617,26 +620,69 @@ func applyFilter(result *DiffResult, filter string) {
 	}
 }
 
-func fetchModInfoPair(ctx context.Context, client *http.Client, name string, mod entry) (*goModInfo, *goModInfo) {
-	var beforeInfo, afterInfo *goModInfo
+func fetchModInfoPair(
+	ctx context.Context,
+	client *http.Client,
+	name string,
+	mod entry,
+	semaphore chan struct{},
+) (*goModInfo, *goModInfo) {
+	var (
+		beforeInfo, afterInfo *goModInfo
+		waitGrp               sync.WaitGroup
+	)
 
 	if mod.beforeVersion != "" {
-		info, err := fetchModInfo(ctx, client, name, mod.beforeVersion)
-		if err != nil {
-			logrus.Debugf("Could not fetch module info for %s@%s: %v", name, mod.beforeVersion, err)
-		} else {
-			beforeInfo = &info
-		}
+		waitGrp.Go(func() {
+			select {
+			case semaphore <- struct{}{}:
+			case <-ctx.Done():
+				return
+			}
+
+			info, err := fetchModInfo(ctx, client, name, mod.beforeVersion)
+
+			<-semaphore
+
+			if err != nil {
+				logrus.Debugf(
+					"Could not fetch module info for %s@%s: %v",
+					name,
+					mod.beforeVersion,
+					err,
+				)
+			} else {
+				beforeInfo = &info
+			}
+		})
 	}
 
 	if mod.afterVersion != "" {
-		info, err := fetchModInfo(ctx, client, name, mod.afterVersion)
-		if err != nil {
-			logrus.Debugf("Could not fetch module info for %s@%s: %v", name, mod.afterVersion, err)
-		} else {
-			afterInfo = &info
-		}
+		waitGrp.Go(func() {
+			select {
+			case semaphore <- struct{}{}:
+			case <-ctx.Done():
+				return
+			}
+
+			info, err := fetchModInfo(ctx, client, name, mod.afterVersion)
+
+			<-semaphore
+
+			if err != nil {
+				logrus.Debugf(
+					"Could not fetch module info for %s@%s: %v",
+					name,
+					mod.afterVersion,
+					err,
+				)
+			} else {
+				afterInfo = &info
+			}
+		})
 	}
+
+	waitGrp.Wait()
 
 	return beforeInfo, afterInfo
 }
@@ -673,13 +719,13 @@ func formatMarkdown(result DiffResult, addLinks bool, headerLevel uint, filter s
 	builder := &strings.Builder{}
 
 	fmt.Fprintf(
-		builder, "%s Dependencies\n", strings.Repeat("#", int(level)), //nolint:gosec // level is clamped to maxHeaderLevel
+		builder, "%s Dependencies\n", strings.Repeat("#", int(level)),
 	)
 
 	writeSection := func(section string, changes []ModuleChange, category string) {
 		fmt.Fprintf(
 			builder,
-			"\n%s %s\n", strings.Repeat("#", int(level)+1), section, //nolint:gosec // level is clamped to maxHeaderLevel
+			"\n%s %s\n", strings.Repeat("#", int(level)+1), section,
 		)
 
 		if len(changes) > 0 {
@@ -721,14 +767,13 @@ func parseModuleLine(line string) (string, string, bool) {
 		return "", "", false
 	}
 
-	// Rewrites have to be handled differently.
 	if len(split) > minModuleFields && split[2] == "=>" {
-		// Local rewrites without any version will be skipped.
+		// Local rewrites without a version (e.g., "mod v1 => ../local").
 		if len(split) == localRewriteFields {
 			return "", "", false
 		}
 
-		// Use the rewritten version and name if available.
+		// Full rewrite (e.g., "old v1 => new v2").
 		if len(split) == fullRewriteFields {
 			split[0] = split[3]
 			split[1] = split[4]
@@ -741,15 +786,18 @@ func parseModuleLine(line string) (string, string, bool) {
 	return modName, modVersion, true
 }
 
-func toLineSet(input string) map[string]bool {
-	lines := make(map[string]bool)
+func parseAllModules(input string) map[string]string {
+	result := make(map[string]string)
 
 	scanner := bufio.NewScanner(strings.NewReader(input))
 	for scanner.Scan() {
-		lines[scanner.Text()] = true
+		name, version, ok := parseModuleLine(scanner.Text())
+		if ok {
+			result[name] = version
+		}
 	}
 
-	return lines
+	return result
 }
 
 func getModules(ctx context.Context, fromDir, toDir string) (modules, error) {
@@ -763,42 +811,26 @@ func getModules(ctx context.Context, fromDir, toDir string) (modules, error) {
 		return nil, err
 	}
 
-	beforeLines := toLineSet(before)
-	afterLines := toLineSet(after)
-
 	logrus.Info("Processing module diffs")
 
+	beforeMods := parseAllModules(before)
+	afterMods := parseAllModules(after)
 	result := modules{}
 
-	parseInto := func(input string, skipLines map[string]bool, apply func(result *entry, version string)) {
-		scanner := bufio.NewScanner(strings.NewReader(input))
-		for scanner.Scan() {
-			line := scanner.Text()
-
-			// Skip lines present in both lists (unchanged).
-			if skipLines[line] {
-				logrus.Debugf("Skipping unchanged module: %s", line)
-
-				continue
-			}
-
-			name, version, ok := parseModuleLine(line)
-			if !ok {
-				continue
-			}
-
-			modEntry := new(entry)
-			if existing, found := result[name]; found {
-				modEntry = &existing
-			}
-
-			apply(modEntry, version)
-			result[name] = *modEntry
+	for name, beforeVer := range beforeMods {
+		afterVer, inAfter := afterMods[name]
+		if !inAfter {
+			result[name] = entry{beforeVersion: beforeVer, afterVersion: ""}
+		} else if beforeVer != afterVer {
+			result[name] = entry{beforeVersion: beforeVer, afterVersion: afterVer}
 		}
 	}
 
-	parseInto(before, afterLines, func(result *entry, version string) { result.beforeVersion = version })
-	parseInto(after, beforeLines, func(result *entry, version string) { result.afterVersion = version })
+	for name, afterVer := range afterMods {
+		if _, inBefore := beforeMods[name]; !inBefore {
+			result[name] = entry{beforeVersion: "", afterVersion: afterVer}
+		}
+	}
 
 	logrus.Infof("%d modules found", len(result))
 
@@ -810,7 +842,7 @@ func retrieveModules(ctx context.Context, workDir string) (string, error) {
 
 	mods, err := runCmdOutput(ctx, workDir, "go", "list", "-mod=readonly", "-m", "all")
 	if err != nil {
-		return "", fmt.Errorf("listing modules in %s: %w", workDir, err)
+		return "", fmt.Errorf("listing modules: %w", err)
 	}
 
 	return strings.TrimSpace(string(mods)), nil
@@ -833,21 +865,22 @@ func runCmdOutput(ctx context.Context, dir, cmd string, args ...string) ([]byte,
 
 	output, err := command.Output()
 	if err != nil {
-		var exitError *exec.ExitError
+		var stderrStr string
 
-		stderr := []byte{}
-		if errors.As(err, &exitError) {
-			stderr = exitError.Stderr
+		if exitError, ok := errors.AsType[*exec.ExitError](err); ok {
+			stderrStr = strings.TrimSpace(string(exitError.Stderr))
+		}
+
+		if stderrStr != "" {
+			return nil, fmt.Errorf(
+				"running %s %s: %s: %w",
+				cmd, strings.Join(args, " "), stderrStr, err,
+			)
 		}
 
 		return nil, fmt.Errorf(
-			"unable to run cmd: %s %s, workdir: %s, stdout: %s, stderr: %v, error: %w",
-			cmd,
-			strings.Join(args, " "),
-			dir,
-			string(output),
-			string(stderr),
-			err,
+			"running %s %s: %w",
+			cmd, strings.Join(args, " "), err,
 		)
 	}
 

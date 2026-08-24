@@ -50,10 +50,6 @@ $(GO_MODIFF_STATIC): ## Build the static go-modiff binary
 
 ##@ Development
 
-.PHONY: completions
-completions: $(GO_MODIFF) ## Generate shell completions
-	$(GO_MODIFF) fish > completions/go-modiff.fish
-
 .PHONY: test
 test: $(GINKGO) ## Run tests with coverage
 	rm -rf $(COVERAGE_DIR) && mkdir -p $(COVERAGE_DIR)
@@ -89,10 +85,6 @@ $(GOLANGCI_LINT):
 verify-tidy: ## Verify go.mod is tidy
 	$(GO) mod tidy && $(GO) mod verify
 	git diff --exit-code go.mod go.sum
-
-.PHONY: verify-completions
-verify-completions: completions ## Verify completions are up to date
-	git diff --exit-code completions/
 
 .PHONY: govulncheck
 govulncheck: ## Run govulncheck

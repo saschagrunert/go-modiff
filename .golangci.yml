@@ -132,7 +132,6 @@ linters:
     exhaustruct_v5:
       ignore-patterns:
         - 'github\.com/urfave/cli/v3\.'
-        - 'github\.com/sirupsen/logrus\.TextFormatter'
         - 'net/http\.Client'
     funlen:
       lines: 80

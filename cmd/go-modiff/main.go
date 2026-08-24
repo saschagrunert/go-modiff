@@ -5,10 +5,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 
 	ccli "github.com/saschagrunert/ccli/v3"
-	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v3"
 
 	"github.com/saschagrunert/go-modiff/pkg/modiff"
@@ -49,7 +49,7 @@ func buildApp() *cli.Command {
 		"dependency changes between versions"
 	app.UsageText = app.Usage
 	app.Flags = buildFlags()
-	app.Commands = buildCommands()
+	app.EnableShellCompletion = true
 	app.Action = run
 
 	return app
@@ -108,25 +108,16 @@ func buildFlags() []cli.Flag {
 	}
 }
 
-func buildCommands() []*cli.Command {
-	return []*cli.Command{
-		{
-			Name:    "fish",
-			Aliases: []string{"f"},
-			Action:  fish,
-			Usage:   "generate the fish shell completion",
-		},
-	}
-}
-
 func run(ctx context.Context, cmd *cli.Command) error {
-	logrus.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true})
+	var level slog.LevelVar
+
+	slog.SetDefault(slog.New(
+		slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: &level}),
+	))
 
 	if cmd.Bool(debugFlag) {
-		logrus.SetLevel(logrus.DebugLevel)
-		logrus.Debug("Enabled debug output")
-	} else {
-		logrus.SetLevel(logrus.InfoLevel)
+		level.Set(slog.LevelDebug)
+		slog.Debug("Enabled debug output")
 	}
 
 	from := cmd.String(fromArg)
@@ -150,25 +141,11 @@ func run(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("unable to run: %w", err)
 	}
 
-	logrus.Info("Done, the result will be printed to `stdout`")
+	slog.Info("Done, the result will be printed to stdout")
 
 	_, err = os.Stdout.WriteString(result)
 	if err != nil {
 		return fmt.Errorf("unable to write result: %w", err)
-	}
-
-	return nil
-}
-
-func fish(_ context.Context, cmd *cli.Command) error {
-	result, err := cmd.Root().ToFishCompletion()
-	if err != nil {
-		return fmt.Errorf("unable to generate completions: %w", err)
-	}
-
-	_, err = os.Stdout.WriteString(result)
-	if err != nil {
-		return fmt.Errorf("unable to write completions: %w", err)
 	}
 
 	return nil

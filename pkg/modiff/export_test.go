@@ -1,11 +1,25 @@
 package modiff
 
 var (
-	GoProxyURLForTest      = goProxyURL
-	ParseModuleLineForTest = parseModuleLine
-	PrettifyVersionForTest = prettifyVersion
-	GitHubBaseURLForTest   = gitHubBaseURL
+	GoProxyURLForTest           = goProxyURL
+	ParseModuleLineForTest      = parseModuleLine
+	PrettifyVersionForTest      = prettifyVersion
+	GitHubBaseURLForTest        = gitHubBaseURL
+	FormatModuleMarkdownForTest = formatModuleMarkdown
 )
+
+// BuildDiffResultForTest calls buildDiffResult with the given category/change pairs.
+// Both slices must have the same length.
+func BuildDiffResultForTest(categories []string, changes []ModuleChange) DiffResult {
+	n := min(len(categories), len(changes))
+	results := make([]moduleResult, n)
+
+	for i := range n {
+		results[i] = moduleResult{category: categories[i], change: changes[i]}
+	}
+
+	return buildDiffResult(results)
+}
 
 // NewGoModInfoForTest creates a goModInfo for testing.
 func NewGoModInfoForTest(vcsURL, hash, ref string) *goModInfo {

@@ -110,10 +110,10 @@ The following command line arguments are currently supported:
 | Argument              | Description                                                         |
 | --------------------- | ------------------------------------------------------------------- |
 | `--repository, -r`    | repository to be used, like: github.com/owner/repo                  |
-| `--from, -f`          | the start of the comparison (any valid git rev) (default: "HEAD") |
-| `--to, -t`            | the end of the comparison (any valid git rev) (default: "HEAD")   |
+| `--from, -f`          | the start of the comparison (any valid git rev, required)           |
+| `--to, -t`            | the end of the comparison (any valid git rev, default: "HEAD")    |
 | `--link, -l`          | add diff links to the markdown output (default: false)              |
-| `--header-level, -i`  | markdown header level depth (default: 1)                            |
+| `--header-level, -H`  | markdown header level depth (default: 1)                            |
 | `--format, -o`        | output format: markdown or json (default: "markdown")               |
 | `--filter`            | filter by category: added, changed, or removed                     |
 | `--concurrency, -c`   | concurrent proxy requests for link resolution (default: 10)         |

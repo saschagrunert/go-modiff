@@ -1,6 +1,5 @@
 package modiff_test
 
-//nolint:revive // test file
 import (
 	"context"
 	"errors"
@@ -10,12 +9,13 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/saschagrunert/go-modiff/pkg/modiff"
 	"github.com/sirupsen/logrus"
+
+	"github.com/saschagrunert/go-modiff/pkg/modiff"
 )
 
 // The actual test suite.
-var _ = testFramework.Describe("Run", func() {
+var _ = Describe("Run", func() {
 	const expected = `# Dependencies
 
 ## Added
@@ -31,7 +31,6 @@ _Nothing has changed._
 - github.com/gofrs/flock: 5135e61
 `
 
-	//nolint:lll // required formatting
 	const expectedWithLinks = `# Dependencies
 
 ## Added
@@ -145,7 +144,7 @@ _Nothing has changed._
 		Expect(res).To(BeEmpty())
 	})
 
-	It("should fail if repository is not clone-able", func() {
+	It("should fail if repository path is invalid", func() {
 		// Given
 		config := modiff.NewConfig("invalid", fromRev, "", true, 1)
 
@@ -208,12 +207,13 @@ func TestCheckURLValid(test *testing.T) {
 
 		gomega := NewGomegaWithT(subTest)
 
-		server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
-			writer.WriteHeader(http.StatusOK)
-		}))
+		server := httptest.NewServer(http.HandlerFunc(
+			func(writer http.ResponseWriter, _ *http.Request) {
+				writer.WriteHeader(http.StatusOK)
+			}))
 		defer server.Close()
 
-		client := &http.Client{} //nolint:exhaustruct // zero value is fine
+		client := &http.Client{}
 		valid, err := modiff.CheckURLValid(context.Background(), client, server.URL)
 		gomega.Expect(err).ToNot(HaveOccurred())
 		gomega.Expect(valid).To(BeTrue())
@@ -224,12 +224,13 @@ func TestCheckURLValid(test *testing.T) {
 
 		gomega := NewGomegaWithT(subTest)
 
-		server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
-			writer.WriteHeader(http.StatusNotFound)
-		}))
+		server := httptest.NewServer(http.HandlerFunc(
+			func(writer http.ResponseWriter, _ *http.Request) {
+				writer.WriteHeader(http.StatusNotFound)
+			}))
 		defer server.Close()
 
-		client := &http.Client{} //nolint:exhaustruct // zero value is fine
+		client := &http.Client{}
 		valid, err := modiff.CheckURLValid(context.Background(), client, server.URL)
 		gomega.Expect(err).ToNot(HaveOccurred())
 		gomega.Expect(valid).To(BeFalse())
@@ -240,7 +241,7 @@ func TestCheckURLValid(test *testing.T) {
 
 		gomega := NewGomegaWithT(subTest)
 
-		client := &http.Client{} //nolint:exhaustruct // zero value is fine
+		client := &http.Client{}
 		valid, err := modiff.CheckURLValid(context.Background(), client, "invalid-url")
 		gomega.Expect(err).To(HaveOccurred())
 		gomega.Expect(err.Error()).To(ContainSubstring(errSending.Error()))
@@ -255,7 +256,11 @@ func TestRefName(test *testing.T) {
 		subTest.Parallel()
 
 		gomega := NewGomegaWithT(subTest)
-		info := modiff.NewGoModInfoForTest("https://github.com/foo/bar", "abc123", "refs/tags/v1.0.0")
+		info := modiff.NewGoModInfoForTest(
+			"https://github.com/foo/bar",
+			"abc123",
+			"refs/tags/v1.0.0",
+		)
 
 		gomega.Expect(modiff.RefNameForTest(info)).To(Equal("v1.0.0"))
 	})
@@ -297,7 +302,8 @@ func TestCommitURL(test *testing.T) {
 		gomega := NewGomegaWithT(subTest)
 		info := modiff.NewGoModInfoForTest("https://github.com/foo/bar", "abc123", "")
 
-		gomega.Expect(modiff.CommitURLForTest(info)).To(Equal("https://github.com/foo/bar/commit/abc123"))
+		gomega.Expect(modiff.CommitURLForTest(info)).
+			To(Equal("https://github.com/foo/bar/commit/abc123"))
 	})
 
 	test.Run("Googlesource", func(subTest *testing.T) {
@@ -306,7 +312,8 @@ func TestCommitURL(test *testing.T) {
 		gomega := NewGomegaWithT(subTest)
 		info := modiff.NewGoModInfoForTest("https://go.googlesource.com/tools", "abc123", "")
 
-		gomega.Expect(modiff.CommitURLForTest(info)).To(Equal("https://go.googlesource.com/tools/+/abc123"))
+		gomega.Expect(modiff.CommitURLForTest(info)).
+			To(Equal("https://go.googlesource.com/tools/+/abc123"))
 	})
 
 	test.Run("Unknown host", func(subTest *testing.T) {
@@ -326,8 +333,16 @@ func TestCompareURL(test *testing.T) {
 		subTest.Parallel()
 
 		gomega := NewGomegaWithT(subTest)
-		info := modiff.NewGoModInfoForTest("https://github.com/foo/bar", "abc123", "refs/tags/v1.0.0")
-		other := modiff.NewGoModInfoForTest("https://github.com/foo/bar", "def456", "refs/tags/v2.0.0")
+		info := modiff.NewGoModInfoForTest(
+			"https://github.com/foo/bar",
+			"abc123",
+			"refs/tags/v1.0.0",
+		)
+		other := modiff.NewGoModInfoForTest(
+			"https://github.com/foo/bar",
+			"def456",
+			"refs/tags/v2.0.0",
+		)
 
 		gomega.Expect(modiff.CompareURLForTest(info, other)).To(
 			Equal("https://github.com/foo/bar/compare/v1.0.0...v2.0.0"),
@@ -470,7 +485,9 @@ func TestParseModuleLine(test *testing.T) {
 
 		gomega := NewGomegaWithT(subTest)
 
-		name, version, ok := modiff.ParseModuleLineForTest("github.com/old v1.0.0 => github.com/new v2.0.0")
+		name, version, ok := modiff.ParseModuleLineForTest(
+			"github.com/old v1.0.0 => github.com/new v2.0.0",
+		)
 
 		gomega.Expect(ok).To(BeTrue())
 		gomega.Expect(name).To(Equal("github.com/new"))
@@ -656,6 +673,189 @@ func TestGitHubBaseURL(test *testing.T) {
 
 		gomega.Expect(modiff.GitHubBaseURLForTest("github.com/foo")).To(
 			Equal("https://github.com/foo"),
+		)
+	})
+}
+
+func TestWithConcurrency(test *testing.T) {
+	test.Parallel()
+
+	gomega := NewGomegaWithT(test)
+	config := modiff.NewConfig("github.com/foo/bar", "v1", "v2", true, 1).
+		WithConcurrency(5)
+
+	gomega.Expect(config.ConcurrencyForTest()).To(Equal(uint(5)))
+}
+
+func TestRunStructured(test *testing.T) {
+	test.Parallel()
+
+	test.Run("Nil config", func(subTest *testing.T) {
+		subTest.Parallel()
+
+		gomega := NewGomegaWithT(subTest)
+		result, err := modiff.RunStructured(context.Background(), nil)
+
+		gomega.Expect(err).To(HaveOccurred())
+		gomega.Expect(err.Error()).To(ContainSubstring("config is nil"))
+		gomega.Expect(result.Added).To(BeNil())
+	})
+
+	test.Run("Invalid repo path", func(subTest *testing.T) {
+		subTest.Parallel()
+
+		gomega := NewGomegaWithT(subTest)
+		config := modiff.NewConfig("invalid", "v1", "v2", false, 1)
+		result, err := modiff.RunStructured(context.Background(), config)
+
+		gomega.Expect(err).To(HaveOccurred())
+		gomega.Expect(err.Error()).To(ContainSubstring("valid module path"))
+		gomega.Expect(result.Added).To(BeNil())
+	})
+
+	test.Run("Empty repository", func(subTest *testing.T) {
+		subTest.Parallel()
+
+		gomega := NewGomegaWithT(subTest)
+		config := modiff.NewConfig("", "v1", "v2", false, 1)
+		result, err := modiff.RunStructured(context.Background(), config)
+
+		gomega.Expect(err).To(HaveOccurred())
+		gomega.Expect(err.Error()).To(ContainSubstring("repository is required"))
+		gomega.Expect(result.Added).To(BeNil())
+	})
+
+	test.Run("From equals to", func(subTest *testing.T) {
+		subTest.Parallel()
+
+		gomega := NewGomegaWithT(subTest)
+		config := modiff.NewConfig("github.com/foo/bar", "v1", "v1", false, 1)
+		result, err := modiff.RunStructured(context.Background(), config)
+
+		gomega.Expect(err).To(HaveOccurred())
+		gomega.Expect(err.Error()).To(ContainSubstring("from"))
+		gomega.Expect(result.Added).To(BeNil())
+	})
+}
+
+func TestClassifyModuleCategories(test *testing.T) {
+	test.Parallel()
+
+	test.Run("Added module", func(subTest *testing.T) {
+		subTest.Parallel()
+
+		gomega := NewGomegaWithT(subTest)
+		mod := modiff.NewEntryForTest("", "v1.0.0")
+
+		category, change := modiff.ClassifyModuleForTest(
+			mod, "github.com/foo/bar", nil, nil, false,
+		)
+
+		gomega.Expect(category).To(Equal(modiff.FilterAdded))
+		gomega.Expect(change.Name).To(Equal("github.com/foo/bar"))
+		gomega.Expect(change.After).To(Equal("v1.0.0"))
+	})
+
+	test.Run("Removed module", func(subTest *testing.T) {
+		subTest.Parallel()
+
+		gomega := NewGomegaWithT(subTest)
+		mod := modiff.NewEntryForTest("v1.0.0", "")
+
+		category, change := modiff.ClassifyModuleForTest(
+			mod, "github.com/foo/bar", nil, nil, false,
+		)
+
+		gomega.Expect(category).To(Equal(modiff.FilterRemoved))
+		gomega.Expect(change.Name).To(Equal("github.com/foo/bar"))
+		gomega.Expect(change.Before).To(Equal("v1.0.0"))
+	})
+
+	test.Run("Changed module", func(subTest *testing.T) {
+		subTest.Parallel()
+
+		gomega := NewGomegaWithT(subTest)
+		mod := modiff.NewEntryForTest("v1.0.0", "v2.0.0")
+
+		category, change := modiff.ClassifyModuleForTest(
+			mod, "github.com/foo/bar", nil, nil, false,
+		)
+
+		gomega.Expect(category).To(Equal(modiff.FilterChanged))
+		gomega.Expect(change.Name).To(Equal("github.com/foo/bar"))
+		gomega.Expect(change.Before).To(Equal("v1.0.0"))
+		gomega.Expect(change.After).To(Equal("v2.0.0"))
+	})
+
+	test.Run("Added with link", func(subTest *testing.T) {
+		subTest.Parallel()
+
+		gomega := NewGomegaWithT(subTest)
+		mod := modiff.NewEntryForTest("", "v1.0.0")
+		info := modiff.NewGoModInfoForTest(
+			"https://github.com/foo/bar", "abc123", "refs/tags/v1.0.0",
+		)
+
+		category, change := modiff.ClassifyModuleForTest(
+			mod, "github.com/foo/bar", nil, info, true,
+		)
+
+		gomega.Expect(category).To(Equal(modiff.FilterAdded))
+		gomega.Expect(change.Link).ToNot(BeEmpty())
+	})
+
+	test.Run("Removed with link", func(subTest *testing.T) {
+		subTest.Parallel()
+
+		gomega := NewGomegaWithT(subTest)
+		mod := modiff.NewEntryForTest("v1.0.0", "")
+		info := modiff.NewGoModInfoForTest(
+			"https://github.com/foo/bar", "abc123", "refs/tags/v1.0.0",
+		)
+
+		category, change := modiff.ClassifyModuleForTest(
+			mod, "github.com/foo/bar", info, nil, true,
+		)
+
+		gomega.Expect(category).To(Equal(modiff.FilterRemoved))
+		gomega.Expect(change.Link).ToNot(BeEmpty())
+	})
+
+	test.Run("Changed with links", func(subTest *testing.T) {
+		subTest.Parallel()
+
+		gomega := NewGomegaWithT(subTest)
+		mod := modiff.NewEntryForTest("v1.0.0", "v2.0.0")
+		before := modiff.NewGoModInfoForTest(
+			"https://github.com/foo/bar", "abc123", "refs/tags/v1.0.0",
+		)
+		after := modiff.NewGoModInfoForTest(
+			"https://github.com/foo/bar", "def456", "refs/tags/v2.0.0",
+		)
+
+		category, change := modiff.ClassifyModuleForTest(
+			mod, "github.com/foo/bar", before, after, true,
+		)
+
+		gomega.Expect(category).To(Equal(modiff.FilterChanged))
+		gomega.Expect(change.Link).To(
+			Equal("https://github.com/foo/bar/compare/v1.0.0...v2.0.0"),
+		)
+	})
+
+	test.Run("Changed GitHub fallback link", func(subTest *testing.T) {
+		subTest.Parallel()
+
+		gomega := NewGomegaWithT(subTest)
+		mod := modiff.NewEntryForTest("v1.0.0", "v2.0.0")
+
+		category, change := modiff.ClassifyModuleForTest(
+			mod, "github.com/foo/bar", nil, nil, true,
+		)
+
+		gomega.Expect(category).To(Equal(modiff.FilterChanged))
+		gomega.Expect(change.Link).To(
+			Equal("https://github.com/foo/bar/compare/v1.0.0...v2.0.0"),
 		)
 	})
 }

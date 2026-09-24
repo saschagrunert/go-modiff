@@ -3,10 +3,10 @@ module github.com/saschagrunert/go-modiff
 go 1.26
 
 require (
-	github.com/onsi/ginkgo/v2 v2.32.1
-	github.com/onsi/gomega v1.42.1
-	github.com/saschagrunert/ccli/v3 v3.0.0
-	github.com/urfave/cli/v3 v3.11.0
+	github.com/onsi/ginkgo/v2 v2.33.0
+	github.com/onsi/gomega v1.43.1
+	github.com/saschagrunert/ccli/v3 v3.0.1
+	github.com/urfave/cli/v3 v3.13.0
 )
 
 require (
@@ -18,7 +18,7 @@ require (
 	github.com/google/pprof v0.0.0-20260402051712-545e8a4df936 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	go.yaml.in/yaml/v3 v3.0.4 // indirect
+	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/mod v0.36.0 // indirect
 	golang.org/x/net v0.56.0 // indirect
 	golang.org/x/sync v0.21.0 // indirect
